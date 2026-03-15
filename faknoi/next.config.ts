@@ -6,16 +6,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.supabase.co" },
     ],
   },
-  serverExternalPackages: ["@supabase/ssr"],
-  webpack: (config, { isServer }) => {
-    if (!isServer) return config;
-    config.node = {
-      ...config.node,
-      __dirname: true,
-      __filename: true,
-    };
-    return config;
-  },
+  serverExternalPackages: [
+    "@humanwhocodes/module-importer",
+    "@humanwhocodes/config-array",
+    "eslint",
+  ],
 };
 
 export default nextConfig;
