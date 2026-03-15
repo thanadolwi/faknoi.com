@@ -1,0 +1,103 @@
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { Plus, MapPin, ArrowRight, Users, GraduationCap } from "lucide-react";
+import CountdownTimer from "@/components/CountdownTimer";
+import UniversityFilter from "@/components/UniversityFilter";
+import { UNIVERSITIES } from "@/lib/universities";
+
+export default async function TripsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ uni?: string; zone?: string }>;
+}) {
+  const { uni, zone } = await searchParams;
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("trips")
+    .select("*, profiles(username)")
+    .in("status", ["open", "shopping"])
+    .order("cutoff_time", { ascending: true });
+
+  if (uni) {
+    query = query.eq("university_id", uni);
+  }
+
+  if (zone) {
+    query = query.or(`origin_zone.eq.${zone},destination_zone.eq.${zone}`);
+  }
+
+  const { data: trips } = await query;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-brand-navy">ทริปทั้งหมด</h1>
+          <p className="text-sm text-gray-400 mt-0.5">เลือกทริปที่ผ่านหอพักของคุณ</p>
+        </div>
+        <Link href="/trips/create" className="btn-primary flex items-center gap-2 text-sm py-2 px-4">
+          <Plus className="w-4 h-4" />
+          เปิดทริป
+        </Link>
+      </div>
+
+      {/* University & Zone Filter */}
+      <UniversityFilter />
+
+      {trips && trips.length > 0 ? (
+        <div className="space-y-3">
+          {trips.map((trip: any) => (
+            <Link key={trip.id} href={`/trips/${trip.id}`} className="card flex items-start justify-between hover:border-brand-blue/40 transition-all group">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                    trip.status === "open" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                  }`}>
+                    {trip.status === "open" ? "เปิดรับ" : "กำลังซื้อ"}
+                  </span>
+                  {trip.university_id && (
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                      <GraduationCap className="w-3 h-3" />
+                      {UNIVERSITIES.find((u) => u.id === trip.university_id)?.shortName}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="w-4 h-4 text-brand-blue flex-shrink-0" />
+                  <span className="font-semibold text-brand-navy">{trip.origin_zone}</span>
+                  <ArrowRight className="w-3 h-3 text-gray-400" />
+                  <span className="font-semibold text-brand-navy">{trip.destination_zone}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 mb-2">
+                  <span className="flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    {trip.current_orders}/{trip.max_orders} ออเดอร์
+                  </span>
+                  <span>โดย {trip.profiles?.username}</span>
+                </div>
+                {trip.note && (
+                  <p className="text-xs text-gray-400 mb-2 bg-gray-50 px-3 py-1.5 rounded-lg">{trip.note}</p>
+                )}
+                <CountdownTimer cutoffTime={trip.cutoff_time} />
+              </div>
+              <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-brand-blue transition-colors mt-1 ml-3 flex-shrink-0" />
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="card text-center py-16 text-gray-400">
+          <MapPin className="w-12 h-12 mx-auto mb-3 opacity-20" />
+          <p className="font-medium mb-1">
+            {zone ? `ไม่มีทริปในโซน "${zone}"` : "ยังไม่มีทริปที่เปิดอยู่"}
+          </p>
+          <p className="text-sm mb-4">เป็นคนแรกที่เปิดทริปในวันนี้</p>
+          <Link href="/trips/create" className="btn-primary text-sm inline-flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            เปิดทริปใหม่
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
