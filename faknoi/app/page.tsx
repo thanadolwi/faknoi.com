@@ -29,8 +29,8 @@ export default function LandingPage() {
           Trip-Based Matching System
         </div>
         <h1 className="text-4xl md:text-6xl font-bold text-brand-navy leading-tight mb-5">
-          ฝากน้อย<br />
-          <span className="text-brand-blue">แต่ได้ครบ</span>
+          ฝากหน่อย<br />
+          <span className="text-brand-blue">สั่งง่าย ฝากได้ ใกล้ตัวกว่าเดลิเวอรี่</span>
         </h1>
         <p className="text-gray-500 text-lg max-w-xl mx-auto mb-10 leading-relaxed">
           แพลตฟอร์มรับหิ้วอาหารในมหาวิทยาลัย เปลี่ยนความวุ่นวายในกลุ่มแชท

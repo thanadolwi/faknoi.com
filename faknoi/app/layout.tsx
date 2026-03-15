@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "FakNoi — ฝากน้อย แต่ได้ครบ",
+  title: "FakNoi — ฝากหน่อย สั่งง่าย ฝากได้ ใกล้ตัวกว่าเดลิเวอรี่",
   description: "แพลตฟอร์มรับหิ้วอาหารในมหาวิทยาลัย ระบบ Trip-Based Matching",
   manifest: "/manifest.json",
   appleWebApp: {

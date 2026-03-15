@@ -14,6 +14,7 @@ export default async function DashboardPage() {
     .from("trips")
     .select("*, profiles(username)")
     .eq("status", "open")
+    .gt("cutoff_time", new Date().toISOString())
     .order("created_at", { ascending: false })
     .limit(3);
 
