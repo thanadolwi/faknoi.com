@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   images: {
@@ -6,11 +7,9 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.supabase.co" },
     ],
   },
-  serverExternalPackages: [
-    "@humanwhocodes/module-importer",
-    "@humanwhocodes/config-array",
-    "eslint",
-  ],
+  experimental: {
+    outputFileTracingRoot: path.join(__dirname, "../"),
+  },
 };
 
 export default nextConfig;
