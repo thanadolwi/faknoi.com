@@ -17,7 +17,6 @@ export default async function TripsPage({
     .from("trips")
     .select("*, profiles(username)")
     .in("status", ["open", "shopping"])
-    .gt("cutoff_time", new Date().toISOString())
     .order("cutoff_time", { ascending: true });
 
   if (uni) {
