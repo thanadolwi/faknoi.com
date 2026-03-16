@@ -131,6 +131,18 @@
   color: #000 !important;
   box-shadow: none !important;
 }
+/* Fix inputs/selects in visual mode */
+.ud-visual input,
+.ud-visual select,
+.ud-visual textarea,
+.ud-visual .input-field {
+  background: #111 !important;
+  color: #fff !important;
+  border-color: #fff !important;
+}
+.ud-visual input::placeholder,
+.ud-visual textarea::placeholder { color: #aaa !important; }
+.ud-visual select option { background: #111 !important; color: #fff !important; }
 .ud-visual * { letter-spacing: 0.03em; }
 
 /* ===== Universal Design: Autism (reduce motion) ===== */

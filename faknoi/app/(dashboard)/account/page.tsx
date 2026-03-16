@@ -8,8 +8,8 @@ import {
   Volume2, Brain, MoreHorizontal, Check, ChevronRight, LogOut
 } from "lucide-react";
 import VisualAccessibility from "@/components/VisualAccessibility";
+import { useLang, type Lang } from "@/lib/LangContext";
 
-type Lang = "th" | "en" | "zh" | "hi";
 type Theme = "light" | "dark";
 
 const LANG_OPTIONS: { value: Lang; label: string; flag: string }[] = [
@@ -144,7 +144,7 @@ const LABELS: Record<Lang, Record<string, string>> = {
 
 export default function AccountPage() {
   const router = useRouter();
-  const [lang, setLang] = useState<Lang>("th");
+  const { lang, setLang } = useLang();
   const [theme, setTheme] = useState<Theme>("light");
   const [udVisual, setUdVisual] = useState(false);
   const [udHearing, setUdHearing] = useState(false);
@@ -165,9 +165,7 @@ export default function AccountPage() {
 
   // Load from localStorage
   useEffect(() => {
-    const savedLang = localStorage.getItem("faknoi_lang") as Lang | null;
     const savedTheme = localStorage.getItem("faknoi_theme") as Theme | null;
-    if (savedLang && ["th","en","zh","hi"].includes(savedLang)) setLang(savedLang);
     if (savedTheme) setTheme(savedTheme);
     setUdVisual(localStorage.getItem("ud_visual") === "1");
     setUdHearing(localStorage.getItem("ud_hearing") === "1");
@@ -203,10 +201,7 @@ export default function AccountPage() {
     localStorage.setItem("ud_other", udOther ? "1" : "0");
   }, [udOther]);
 
-  function handleLang(l: Lang) {
-    setLang(l);
-    localStorage.setItem("faknoi_lang", l);
-  }
+  // setLang is now from useLang() context — no local handler needed
 
   async function handleChangePw() {
     setPwMsg(null);
@@ -255,7 +250,7 @@ export default function AccountPage() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             {LANG_OPTIONS.map(({ value, label, flag }) => (
-              <button key={value} onClick={() => handleLang(value)}
+              <button key={value} onClick={() => setLang(value)}
                 className={`flex items-center justify-center gap-2 py-2.5 rounded-2xl font-black text-sm transition-all duration-200 ${
                   lang === value
                     ? "text-white shadow-blue-sm"
@@ -267,8 +262,6 @@ export default function AccountPage() {
             ))}
           </div>
         </div>
-
-        {/* Security */}
         <div className="card">
           <div className="flex items-center gap-2 mb-3">
             <Lock className="w-5 h-5 text-brand-blue" />
