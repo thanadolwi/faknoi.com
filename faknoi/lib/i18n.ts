@@ -538,6 +538,12 @@ const extra: Record<Lang, Record<string, string>> = {
     reg_err_pass_short: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
     reg_err_username_short: "ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร",
     reg_err_email_used: "อีเมลนี้ถูกใช้งานแล้ว",
+    // CountdownTimer
+    timer_cutoff_in: "ตัดรอบใน",
+    timer_expired: "หมดเวลารับออเดอร์แล้ว",
+    timer_h: "ชม.",
+    timer_m: "น.",
+    timer_s: "วิ.",
   },
   en: {
     chat_active: "Active Order Chats",
@@ -739,6 +745,11 @@ const extra: Record<Lang, Record<string, string>> = {
     reg_err_pass_short: "Password must be at least 6 characters",
     reg_err_username_short: "Username must be at least 3 characters",
     reg_err_email_used: "This email is already in use",
+    timer_cutoff_in: "Cutoff in",
+    timer_expired: "Order cutoff has passed",
+    timer_h: "h",
+    timer_m: "m",
+    timer_s: "s",
   },
   zh: {
     chat_active: "进行中的订单聊天",
@@ -940,6 +951,11 @@ const extra: Record<Lang, Record<string, string>> = {
     reg_err_pass_short: "密码至少需要6个字符",
     reg_err_username_short: "用户名至少需要3个字符",
     reg_err_email_used: "该邮箱已被使用",
+    timer_cutoff_in: "截止于",
+    timer_expired: "已过截止时间",
+    timer_h: "时",
+    timer_m: "分",
+    timer_s: "秒",
   },
   hi: {
     chat_active: "सक्रिय ऑर्डर चैट",
@@ -1141,6 +1157,11 @@ const extra: Record<Lang, Record<string, string>> = {
     reg_err_pass_short: "पासवर्ड कम से कम 6 अक्षर होना चाहिए",
     reg_err_username_short: "उपयोगकर्ता नाम कम से कम 3 अक्षर होना चाहिए",
     reg_err_email_used: "यह ईमेल पहले से उपयोग में है",
+    timer_cutoff_in: "कटऑफ में",
+    timer_expired: "ऑर्डर कटऑफ हो गया",
+    timer_h: "घं.",
+    timer_m: "मि.",
+    timer_s: "से.",
   },
 };
 

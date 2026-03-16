@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
+import { useLang } from "@/lib/LangContext";
+import { t } from "@/lib/i18n";
 
 export default function CountdownTimer({ cutoffTime }: { cutoffTime: string }) {
+  const { lang } = useLang();
   const [timeLeft, setTimeLeft] = useState(getTimeLeft(cutoffTime));
 
   function getTimeLeft(target: string) {
@@ -26,18 +29,17 @@ export default function CountdownTimer({ cutoffTime }: { cutoffTime: string }) {
     return (
       <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-2.5 rounded-xl">
         <Clock className="w-4 h-4" />
-        <span className="font-semibold">หมดเวลารับออเดอร์แล้ว</span>
+        <span className="font-semibold">{t(lang, "timer_expired")}</span>
       </div>
     );
   }
 
-  // color based on urgency
-  const isUrgent = timeLeft.diff < 10 * 60 * 1000; // < 10 min
-  const isWarning = timeLeft.diff < 30 * 60 * 1000; // < 30 min
+  const isUrgent  = timeLeft.diff < 10 * 60 * 1000;
+  const isWarning = timeLeft.diff < 30 * 60 * 1000;
 
-  const bgColor = isUrgent ? "bg-red-50 border-red-200" : isWarning ? "bg-yellow-50 border-yellow-200" : "bg-brand-blue/5 border-brand-blue/20";
-  const textColor = isUrgent ? "text-red-600" : isWarning ? "text-yellow-700" : "text-brand-navy";
-  const dotColor = isUrgent ? "bg-red-500" : isWarning ? "bg-yellow-500" : "bg-brand-blue";
+  const bgColor   = isUrgent ? "bg-red-50 border-red-200"       : isWarning ? "bg-yellow-50 border-yellow-200"   : "bg-brand-blue/5 border-brand-blue/20";
+  const textColor = isUrgent ? "text-red-600"                   : isWarning ? "text-yellow-700"                  : "text-brand-navy dark:text-white";
+  const dotColor  = isUrgent ? "bg-red-500"                     : isWarning ? "bg-yellow-500"                    : "bg-brand-blue";
 
   return (
     <div className={`flex items-center gap-3 border px-4 py-2.5 rounded-xl ${bgColor}`}>
@@ -45,24 +47,24 @@ export default function CountdownTimer({ cutoffTime }: { cutoffTime: string }) {
         <span className={`w-2 h-2 rounded-full animate-pulse ${dotColor}`} />
         <Clock className={`w-4 h-4 ${textColor}`} />
       </div>
-      <span className={`text-sm font-medium ${textColor}`}>ตัดรอบใน</span>
+      <span className={`text-sm font-medium ${textColor}`}>{t(lang, "timer_cutoff_in")}</span>
       <div className="flex items-center gap-1">
         {timeLeft.h > 0 && (
           <>
             <span className={`font-mono font-bold text-lg tabular-nums ${textColor}`}>
               {String(timeLeft.h).padStart(2, "0")}
             </span>
-            <span className={`text-xs ${textColor} opacity-60`}>ชม.</span>
+            <span className={`text-xs ${textColor} opacity-60`}>{t(lang, "timer_h")}</span>
           </>
         )}
         <span className={`font-mono font-bold text-lg tabular-nums ${textColor}`}>
           {String(timeLeft.m).padStart(2, "0")}
         </span>
-        <span className={`text-xs ${textColor} opacity-60`}>น.</span>
+        <span className={`text-xs ${textColor} opacity-60`}>{t(lang, "timer_m")}</span>
         <span className={`font-mono font-bold text-lg tabular-nums ${textColor}`}>
           {String(timeLeft.s).padStart(2, "0")}
         </span>
-        <span className={`text-xs ${textColor} opacity-60`}>วิ.</span>
+        <span className={`text-xs ${textColor} opacity-60`}>{t(lang, "timer_s")}</span>
       </div>
     </div>
   );

@@ -113,6 +113,15 @@
 /* Select / option backgrounds */
 .dark select { @apply bg-gray-800 text-gray-100 border-gray-700; }
 .dark select option { background: #1f2937; color: #f3f4f6; }
+/* datetime-local input fix in dark mode */
+.dark input[type="datetime-local"],
+.dark input[type="date"],
+.dark input[type="time"] {
+  color-scheme: dark;
+  background-color: #1f2937;
+  color: #f3f4f6;
+  border-color: #374151;
+}
 
 /* ===== Universal Design: Visual Impairment ===== */
 .ud-visual body {
