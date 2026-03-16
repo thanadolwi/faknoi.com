@@ -6,8 +6,14 @@ import DashboardChats from "./DashboardChats";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
 
+interface ZoneByUni {
+  uniId: string;
+  uniName: string;
+  zones: [string, number][];
+}
+
 interface Insights {
-  topZones: [string, number][];
+  topZonesByUni: ZoneByUni[];
   topHours: { hour: number; count: number }[];
   topItems: [string, number][];
   topShops: [string, number][];
@@ -46,7 +52,6 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
     cancelled:  { label: t(lang,"status_cancelled"),  color: "bg-red-100 text-red-700",        emoji: "❌" },
   };
 
-  const maxZone = insights.topZones[0]?.[1] || 1;
   const maxItem = insights.topItems[0]?.[1] || 1;
 
   return (
@@ -183,39 +188,54 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
             </div>
           </div>
 
-          {/* Grid row 1: Hot Zones + Peak Hours */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Hot Zones */}
-            <div className="card space-y-2.5 p-4">
-              <div className="flex items-center gap-1.5 mb-1">
+          {/* Hot Zones by University */}
+          {insights.topZonesByUni.length > 0 && (
+            <div className="card p-4 space-y-4">
+              <div className="flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-brand-blue" />
                 <span className="text-xs font-black text-brand-navy">โซนฮิต</span>
               </div>
-              {insights.topZones.slice(0, 4).map(([zone, count], i) => (
-                <div key={zone} className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-gray-600 truncate max-w-[80px]">{zone}</span>
-                    <span className="text-xs font-black text-brand-navy">{count}</span>
+              {insights.topZonesByUni.map((uni, uniIdx) => {
+                const maxZone = uni.zones[0]?.[1] || 1;
+                return (
+                  <div key={uni.uniId} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${
+                        uniIdx === 0 ? "bg-brand-blue/10 text-brand-blue" :
+                        uniIdx === 1 ? "bg-brand-cyan/10 text-brand-navy" :
+                        "bg-gray-100 text-gray-500"
+                      }`}>{uni.uniName}</span>
+                    </div>
+                    {uni.zones.map(([zone, count], i) => (
+                      <div key={zone} className="space-y-1 pl-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-gray-600 truncate max-w-[180px]">{zone}</span>
+                          <span className="text-xs font-black text-brand-navy">{count}</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{
+                              width: `${(count / maxZone) * 100}%`,
+                              background: i === 0
+                                ? "linear-gradient(90deg,#5478FF,#53CBF3)"
+                                : i === 1
+                                ? "linear-gradient(90deg,#53CBF3,#FFDE42)"
+                                : "linear-gradient(90deg,#FFDE42,#FFB800)",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${(count / maxZone) * 100}%`,
-                        background: i === 0
-                          ? "linear-gradient(90deg,#5478FF,#53CBF3)"
-                          : i === 1
-                          ? "linear-gradient(90deg,#53CBF3,#FFDE42)"
-                          : "linear-gradient(90deg,#FFDE42,#FFB800)",
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+          )}
 
-            {/* Peak Hours */}
-            <div className="card space-y-2.5 p-4">
+          {/* Peak Hours */}
+          {insights.topHours.length > 0 && (
+            <div className="card p-4 space-y-2.5">
               <div className="flex items-center gap-1.5 mb-1">
                 <Clock className="w-3.5 h-3.5 text-brand-cyan" />
                 <span className="text-xs font-black text-brand-navy">ช่วงเวลาฮิต</span>
@@ -235,7 +255,7 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
                 </div>
               ))}
             </div>
-          </div>
+          )}
 
           {/* Top Items */}
           {insights.topItems.length > 0 && (

@@ -1,15 +1,17 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import I18nDashboard from "@/components/I18nDashboard";
+import { UNIVERSITIES } from "@/lib/universities";
 
 export const revalidate = 0;
 
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
   const username = user?.user_metadata?.username || user?.email?.split("@")[0] || "ผู้ใช้";
 
-  // trips — กรองเต็มออก
-  const { data: allTrips } = await supabase
+  // trips — ใช้ admin client เพื่อดึงทริปของทุกคน กรองเต็มออก
+  const { data: allTrips } = await adminSupabase
     .from("trips").select("*, profiles(username)")
     .eq("status", "open").gt("cutoff_time", new Date().toISOString())
     .order("created_at", { ascending: false }).limit(10);
@@ -41,24 +43,33 @@ export default async function DashboardPage() {
     ...(shopperActiveOrders || []).filter((o: any) => !(buyerActiveOrders || []).find((b: any) => b.id === o.id)),
   ];
 
-  // Insights — ดึง orders ทุกคน 7 วันล่าสุด (bypass RLS ด้วย admin client)
-  const adminSupabase = createAdminClient();
+  // Insights — ดึง orders ทุกคน 7 วันล่าสุด (bypass RLS)
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data: recentOrders } = await adminSupabase
     .from("orders")
-    .select("items, trips(origin_zone, destination_zone), created_at")
+    .select("items, trips(origin_zone, destination_zone, university_id), created_at")
     .gte("created_at", since)
     .not("status", "eq", "cancelled");
 
-  // คำนวณ insights
-  const zoneCount: Record<string, number> = {};
+  // build university shortName map
+  const uniMap: Record<string, string> = {};
+  for (const u of UNIVERSITIES) uniMap[u.id] = u.shortName;
+
+  // คำนวณ insights — โซนฮิตแยกตาม uni
+  const zoneByUni: Record<string, Record<string, number>> = {}; // { uniId: { zone: count } }
   const hourCount: Record<number, number> = {};
   const itemCount: Record<string, number> = {};
   const shopCount: Record<string, number> = {};
 
   for (const order of recentOrders || []) {
-    const zone = (order.trips as any)?.origin_zone;
-    if (zone) zoneCount[zone] = (zoneCount[zone] || 0) + 1;
+    const trip = order.trips as any;
+    const zone = trip?.origin_zone;
+    const uniId = trip?.university_id || "other";
+
+    if (zone) {
+      if (!zoneByUni[uniId]) zoneByUni[uniId] = {};
+      zoneByUni[uniId][zone] = (zoneByUni[uniId][zone] || 0) + 1;
+    }
 
     const h = new Date(order.created_at).getHours();
     hourCount[h] = (hourCount[h] || 0) + 1;
@@ -77,7 +88,17 @@ export default async function DashboardPage() {
     }
   }
 
-  const topZones = Object.entries(zoneCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  // แปลง zoneByUni เป็น array เรียงตาม uni
+  const topZonesByUni = Object.entries(zoneByUni).map(([uniId, zones]) => ({
+    uniId,
+    uniName: uniMap[uniId] || uniId,
+    zones: Object.entries(zones).sort((a, b) => b[1] - a[1]).slice(0, 4),
+  })).sort((a, b) => {
+    const totalA = a.zones.reduce((s, [, c]) => s + c, 0);
+    const totalB = b.zones.reduce((s, [, c]) => s + c, 0);
+    return totalB - totalA;
+  });
+
   const topHours = Object.entries(hourCount).sort((a, b) => b[1] - a[1]).slice(0, 3)
     .map(([h, c]) => ({ hour: parseInt(h), count: c }));
   const topItems = Object.entries(itemCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -91,7 +112,7 @@ export default async function DashboardPage() {
       orders={orders || []}
       allActiveOrders={allActiveOrders}
       currentUserId={user?.id || ""}
-      insights={{ topZones, topHours, topItems, topShops, totalRecent }}
+      insights={{ topZonesByUni, topHours, topItems, topShops, totalRecent }}
     />
   );
 }
