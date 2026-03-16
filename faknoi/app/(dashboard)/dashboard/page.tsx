@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Plus, ArrowRight, Clock } from "lucide-react";
 import DashboardChats from "@/components/DashboardChats";
 
+export const revalidate = 30;
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

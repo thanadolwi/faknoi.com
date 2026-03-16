@@ -12,6 +12,8 @@ const statusLabel: Record<string, { label: string; color: string }> = {
   cancelled:  { label: "ยกเลิก",       color: "bg-red-100 text-red-600" },
 };
 
+export const revalidate = 15;
+
 export default async function OrdersPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

@@ -5,6 +5,8 @@ import CountdownTimer from "@/components/CountdownTimer";
 import UniversityFilter from "@/components/UniversityFilter";
 import { UNIVERSITIES } from "@/lib/universities";
 
+export const revalidate = 30; // revalidate ทุก 30 วินาที
+
 export default async function TripsPage({
   searchParams,
 }: {
