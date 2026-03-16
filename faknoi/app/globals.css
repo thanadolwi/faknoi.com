@@ -12,14 +12,15 @@
 @layer base {
   html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   body {
-    @apply text-gray-900 antialiased;
+    @apply text-gray-800 antialiased;
     overscroll-behavior: none;
-    background-color: #F0F2FF;
+    background-color: #FFFBFF;
     background-image:
-      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(84,120,255,0.18) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 50% at 90% 10%, rgba(83,203,243,0.15) 0%, transparent 55%),
-      radial-gradient(ellipse 50% 60% at 80% 90%, rgba(255,222,66,0.13) 0%, transparent 55%),
-      radial-gradient(ellipse 70% 50% at 5% 90%, rgba(17,31,162,0.08) 0%, transparent 60%);
+      radial-gradient(ellipse 55% 45% at 5% 5%,   rgba(212,184,255,0.35) 0%, transparent 55%),
+      radial-gradient(ellipse 45% 55% at 95% 8%,  rgba(255,179,217,0.30) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 40% at 90% 92%,  rgba(84,120,255,0.15) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 45% at 8% 95%,  rgba(83,203,243,0.20) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(255,222,66,0.08) 0%, transparent 60%);
     background-attachment: fixed;
   }
   button, a { -webkit-tap-highlight-color: transparent; }
@@ -28,43 +29,42 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-brand-blue text-white font-bold py-3 px-5 rounded-2xl
+    @apply bg-brand-blue text-white font-black py-3 px-5 rounded-2xl
            transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed
-           select-none active:scale-95 shadow-lg shadow-brand-blue/25;
+           select-none active:scale-95 shadow-lg shadow-brand-blue/20;
     @apply md:hover:brightness-110;
   }
   .btn-secondary {
-    @apply bg-brand-yellow text-brand-navy font-bold py-3 px-5 rounded-2xl
+    @apply bg-brand-yellow text-brand-navy font-black py-3 px-5 rounded-2xl
            transition-all duration-200 select-none active:scale-95
            shadow-md shadow-brand-yellow/30;
     @apply md:hover:brightness-105;
   }
   .btn-ghost {
-    @apply bg-white/60 backdrop-blur-sm text-gray-700 font-semibold py-3 px-5 rounded-2xl
-           border border-white/80 transition-all duration-200 select-none active:scale-95;
+    @apply bg-white/80 backdrop-blur-sm text-gray-700 font-bold py-3 px-5 rounded-2xl
+           border-2 border-candy-lilac/40 transition-all duration-200 select-none active:scale-95;
     @apply md:hover:bg-white;
   }
   .input-field {
-    @apply w-full px-4 py-3 rounded-2xl border-2 border-gray-100 bg-white
+    @apply w-full px-4 py-3 rounded-2xl border-2 border-candy-lilac/40 bg-white/90
            focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10
            transition-all duration-200 placeholder:text-gray-300 font-medium;
   }
   .card {
-    @apply bg-white rounded-3xl shadow-sm border border-gray-100/80 p-4 md:p-5;
+    @apply bg-white/80 backdrop-blur-sm rounded-3xl border-2 border-white
+           shadow-[0_4px_24px_rgba(84,120,255,0.07)] p-4 md:p-5;
   }
-  .card-glass {
-    @apply bg-white/70 backdrop-blur-md rounded-3xl border border-white/80 p-4 md:p-5 shadow-sm;
+  .card-candy {
+    @apply bg-white/90 backdrop-blur-sm rounded-3xl border-2 p-4 md:p-5
+           shadow-[0_4px_24px_rgba(212,184,255,0.15)];
   }
   .pill {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black;
   }
   .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 }
 
-/* Smooth page feel */
 * { -webkit-font-smoothing: antialiased; }
-
-/* Custom scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { @apply bg-brand-blue/20 rounded-full; }
+::-webkit-scrollbar-thumb { background: rgba(212,184,255,0.5); border-radius: 99px; }

@@ -26,7 +26,7 @@ export default function Navbar({ username }: { username: string }) {
   return (
     <>
       {/* Desktop top navbar */}
-      <header className="hidden md:block bg-white/70 backdrop-blur-xl border-b border-white/80 sticky top-0 z-50 shadow-sm">
+      <header className="hidden md:block bg-white/75 backdrop-blur-xl border-b-2 border-candy-lilac/20 sticky top-0 z-50 shadow-sm shadow-candy-lilac/10">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 rounded-2xl bg-brand-navy flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200">
@@ -67,7 +67,7 @@ export default function Navbar({ username }: { username: string }) {
       </header>
 
       {/* Mobile top bar */}
-      <header className="md:hidden bg-white/70 backdrop-blur-xl border-b border-white/80 sticky top-0 z-50"
+      <header className="md:hidden bg-white/75 backdrop-blur-xl border-b-2 border-candy-lilac/20 sticky top-0 z-50"
         style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="px-4 h-14 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2">
@@ -89,7 +89,7 @@ export default function Navbar({ username }: { username: string }) {
       </header>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-t border-white/80 shadow-lg"
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-xl border-t-2 border-candy-lilac/20 shadow-lg shadow-candy-lilac/10"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="flex px-2 py-1">
           {navItems.map(({ href, label, emoji }) => {
