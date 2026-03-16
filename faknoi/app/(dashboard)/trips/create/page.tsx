@@ -213,7 +213,7 @@ export default function CreateTripPage() {
               ค่าหิ้วต่อชิ้น (บาท)
             </label>
             <input type="number" className="input-field" min={0} step={0.5} value={form.fee_per_item}
-              onChange={(e) => update("fee_per_item", parseFloat(e.target.value))} />
+              onChange={(e) => update("fee_per_item", parseFloat(e.target.value))} required />
             <p className="text-xs text-gray-400 mt-1.5">ระบุ 0 หากไม่คิดค่าบริการ</p>
           </div>
           <div>
@@ -224,7 +224,8 @@ export default function CreateTripPage() {
             <textarea className="input-field resize-none" rows={3}
               placeholder={"เช่น PromptPay 0812345678 ชื่อ นายสมชาย ใจดี\nหรือ กรุณาโอนก่อนรับของ"}
               value={form.payment_info}
-              onChange={(e) => update("payment_info", e.target.value)} />
+              onChange={(e) => update("payment_info", e.target.value)}
+              required />
             <p className="text-xs text-amber-600 mt-1.5 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100">
               ⚠️ ข้อมูลนี้จะแสดงต่อผู้ซื้อหลังจากที่คุณกดสถานะ "ซื้อสินค้าเสร็จแล้ว" เท่านั้น
             </p>
