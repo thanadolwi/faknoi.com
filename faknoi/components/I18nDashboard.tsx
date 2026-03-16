@@ -48,7 +48,6 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
 
   const maxZone = insights.topZones[0]?.[1] || 1;
   const maxItem = insights.topItems[0]?.[1] || 1;
-  const maxShop = insights.topShops[0]?.[1] || 1;
 
   return (
     <div className="space-y-5">
@@ -80,128 +79,6 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
       {/* Active Order Chats */}
       {allActiveOrders.length > 0 && (
         <DashboardChats orders={allActiveOrders} currentUserId={currentUserId} currentUsername={username} />
-      )}
-
-      {/* ── INSIGHTS ── */}
-      {insights.totalRecent > 0 && (
-        <div className="space-y-3">
-          {/* Header */}
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl hero-grad flex items-center justify-center flex-shrink-0">
-              <TrendingUp className="w-3.5 h-3.5 text-white" />
-            </div>
-            <div>
-              <h2 className="font-black text-brand-navy text-sm leading-tight">Insights · 7 วันล่าสุด</h2>
-              <p className="text-xs text-gray-400">{insights.totalRecent} ออเดอร์</p>
-            </div>
-          </div>
-
-          {/* Grid row 1: Hot Zones + Peak Hours */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Hot Zones */}
-            <div className="card space-y-2.5 p-4">
-              <div className="flex items-center gap-1.5 mb-1">
-                <MapPin className="w-3.5 h-3.5 text-brand-blue" />
-                <span className="text-xs font-black text-brand-navy">โซนฮิต</span>
-              </div>
-              {insights.topZones.slice(0, 4).map(([zone, count], i) => (
-                <div key={zone} className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-gray-600 truncate max-w-[80px]">{zone}</span>
-                    <span className="text-xs font-black text-brand-navy">{count}</span>
-                  </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${(count / maxZone) * 100}%`,
-                        background: i === 0
-                          ? "linear-gradient(90deg,#5478FF,#53CBF3)"
-                          : i === 1
-                          ? "linear-gradient(90deg,#53CBF3,#FFDE42)"
-                          : "linear-gradient(90deg,#FFDE42,#FFB800)",
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Peak Hours */}
-            <div className="card space-y-2.5 p-4">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Clock className="w-3.5 h-3.5 text-brand-cyan" />
-                <span className="text-xs font-black text-brand-navy">ช่วงเวลาฮิต</span>
-              </div>
-              {insights.topHours.map(({ hour, count }, i) => (
-                <div key={hour} className="flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 ${
-                    i === 0 ? "bg-brand-blue text-white" : i === 1 ? "bg-brand-cyan/20 text-brand-navy" : "bg-gray-100 text-gray-500"
-                  }`}>
-                    {hour}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold text-brand-navy">{HourLabel(hour)}</p>
-                    <p className="text-xs text-gray-400">{count} ออเดอร์</p>
-                  </div>
-                  {i === 0 && <Flame className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Top Items */}
-          <div className="card p-4 space-y-3">
-            <div className="flex items-center gap-1.5">
-              <ShoppingBag className="w-3.5 h-3.5 text-brand-blue" />
-              <span className="text-xs font-black text-brand-navy">เมนูฮิต</span>
-              <span className="ml-auto text-xs text-gray-400">7 วันล่าสุด</span>
-            </div>
-            <div className="space-y-2">
-              {insights.topItems.map(([item, count], i) => (
-                <div key={item} className="flex items-center gap-3">
-                  <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 ${
-                    i === 0 ? "bg-brand-yellow text-brand-navy" : "bg-gray-100 text-gray-500"
-                  }`}>{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-xs font-bold text-brand-navy truncate">{capitalize(item)}</span>
-                      <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{count}×</span>
-                    </div>
-                    <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full bg-gradient-to-r from-brand-blue to-brand-cyan"
-                        style={{ width: `${(count / maxItem) * 100}%` }} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Top Shops */}
-          <div className="card p-4 space-y-3">
-            <div className="flex items-center gap-1.5">
-              <Store className="w-3.5 h-3.5 text-brand-cyan" />
-              <span className="text-xs font-black text-brand-navy">ร้านฮิต</span>
-              <span className="ml-auto text-xs text-gray-400">7 วันล่าสุด</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {insights.topShops.map(([shop, count], i) => (
-                <div key={shop} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold border ${
-                  i === 0
-                    ? "bg-brand-blue/10 border-brand-blue/20 text-brand-blue"
-                    : i === 1
-                    ? "bg-brand-cyan/10 border-brand-cyan/20 text-brand-navy"
-                    : "bg-gray-50 border-gray-100 text-gray-600"
-                }`}>
-                  {i === 0 && <Flame className="w-3 h-3 text-orange-400" />}
-                  {capitalize(shop)}
-                  <span className="opacity-60">{count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Open Trips */}
@@ -291,6 +168,132 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
           </div>
         )}
       </div>
+
+      {/* Insights — ท้ายสุด */}
+      {insights.totalRecent > 0 && (
+        <div className="space-y-3">
+          {/* Header */}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-xl hero-grad flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-3.5 h-3.5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-black text-brand-navy text-sm leading-tight">Insights · 7 วันล่าสุด</h2>
+              <p className="text-xs text-gray-400">{insights.totalRecent} ออเดอร์</p>
+            </div>
+          </div>
+
+          {/* Grid row 1: Hot Zones + Peak Hours */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Hot Zones */}
+            <div className="card space-y-2.5 p-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <MapPin className="w-3.5 h-3.5 text-brand-blue" />
+                <span className="text-xs font-black text-brand-navy">โซนฮิต</span>
+              </div>
+              {insights.topZones.slice(0, 4).map(([zone, count], i) => (
+                <div key={zone} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-600 truncate max-w-[80px]">{zone}</span>
+                    <span className="text-xs font-black text-brand-navy">{count}</span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${(count / maxZone) * 100}%`,
+                        background: i === 0
+                          ? "linear-gradient(90deg,#5478FF,#53CBF3)"
+                          : i === 1
+                          ? "linear-gradient(90deg,#53CBF3,#FFDE42)"
+                          : "linear-gradient(90deg,#FFDE42,#FFB800)",
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Peak Hours */}
+            <div className="card space-y-2.5 p-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Clock className="w-3.5 h-3.5 text-brand-cyan" />
+                <span className="text-xs font-black text-brand-navy">ช่วงเวลาฮิต</span>
+              </div>
+              {insights.topHours.map(({ hour, count }, i) => (
+                <div key={hour} className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 ${
+                    i === 0 ? "bg-brand-blue text-white" : i === 1 ? "bg-brand-cyan/20 text-brand-navy" : "bg-gray-100 text-gray-500"
+                  }`}>
+                    {hour}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-brand-navy">{HourLabel(hour)}</p>
+                    <p className="text-xs text-gray-400">{count} ออเดอร์</p>
+                  </div>
+                  {i === 0 && <Flame className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Top Items */}
+          {insights.topItems.length > 0 && (
+            <div className="card p-4 space-y-3">
+              <div className="flex items-center gap-1.5">
+                <ShoppingBag className="w-3.5 h-3.5 text-brand-blue" />
+                <span className="text-xs font-black text-brand-navy">เมนูฮิต</span>
+                <span className="ml-auto text-xs text-gray-400">7 วันล่าสุด</span>
+              </div>
+              <div className="space-y-2">
+                {insights.topItems.map(([item, count], i) => (
+                  <div key={item} className="flex items-center gap-3">
+                    <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 ${
+                      i === 0 ? "bg-brand-yellow text-brand-navy" : "bg-gray-100 text-gray-500"
+                    }`}>{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs font-bold text-brand-navy truncate">{capitalize(item)}</span>
+                        <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{count}×</span>
+                      </div>
+                      <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-brand-blue to-brand-cyan"
+                          style={{ width: `${(count / maxItem) * 100}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top Shops */}
+          {insights.topShops.length > 0 && (
+            <div className="card p-4 space-y-3">
+              <div className="flex items-center gap-1.5">
+                <Store className="w-3.5 h-3.5 text-brand-cyan" />
+                <span className="text-xs font-black text-brand-navy">ร้านฮิต</span>
+                <span className="ml-auto text-xs text-gray-400">7 วันล่าสุด</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {insights.topShops.map(([shop, count], i) => (
+                  <div key={shop} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold border ${
+                    i === 0
+                      ? "bg-brand-blue/10 border-brand-blue/20 text-brand-blue"
+                      : i === 1
+                      ? "bg-brand-cyan/10 border-brand-cyan/20 text-brand-navy"
+                      : "bg-gray-50 border-gray-100 text-gray-600"
+                  }`}>
+                    {i === 0 && <Flame className="w-3 h-3 text-orange-400" />}
+                    {capitalize(shop)}
+                    <span className="opacity-60">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
