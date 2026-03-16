@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Clock, TrendingUp, MapPin, ShoppingBag, Store, Flame, ChevronDown } from "lucide-react";
 import DashboardChats from "./DashboardChats";
+import { getUniShortNameById, getZoneNameByThai } from "@/lib/universities";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
 
@@ -210,7 +211,7 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
                 className="w-full appearance-none input-field text-sm font-bold text-brand-navy pr-8">
                 <option value="all">🏫 ทุกมหาวิทยาลัย</option>
                 {insights.topZonesByUni.map((u) => (
-                  <option key={u.uniId} value={u.uniId}>{u.uniName}</option>
+                  <option key={u.uniId} value={u.uniId}>{getUniShortNameById(u.uniId, lang)}</option>
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -236,13 +237,13 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
                     <div key={uni.uniId} className="space-y-2">
                       {selectedUni === "all" && (
                         <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
-                          {uni.uniName}
+                          {getUniShortNameById(uni.uniId, lang)}
                         </span>
                       )}
                       {uni.zones.map(([zone, count]) => (
                         <div key={zone} className="space-y-1 pl-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-gray-600 truncate max-w-[180px]">{zone}</span>
+                            <span className="text-xs font-medium text-gray-600 truncate max-w-[180px]">{getZoneNameByThai(zone, lang)}</span>
                             <span className="text-xs font-black text-brand-navy">{count}</span>
                           </div>
                           <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -300,7 +301,7 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
                     <div key={uni.uniId} className="space-y-2">
                       {selectedUni === "all" && (
                         <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
-                          {uni.uniName}
+                          {getUniShortNameById(uni.uniId, lang)}
                         </span>
                       )}
                       {uni.items.map(([item, count], i) => (
