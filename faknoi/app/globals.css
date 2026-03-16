@@ -103,6 +103,16 @@
 .dark .border-gray-100 { @apply border-gray-800; }
 .dark .border-gray-200 { @apply border-gray-700; }
 .dark .min-h-screen { background-color: #030712; }
+/* Navy & blue text → white in dark mode */
+.dark .text-brand-navy { color: #fff !important; }
+.dark .text-brand-blue { color: #93c5fd !important; }
+.dark .text-brand-cyan { color: #67e8f9 !important; }
+/* Subtext that uses brand colors */
+.dark h1, .dark h2, .dark h3 { color: #fff; }
+.dark p.text-brand-navy, .dark span.text-brand-navy { color: #fff !important; }
+/* Select / option backgrounds */
+.dark select { @apply bg-gray-800 text-gray-100 border-gray-700; }
+.dark select option { background: #1f2937; color: #f3f4f6; }
 
 /* ===== Universal Design: Visual Impairment ===== */
 .ud-visual body {
