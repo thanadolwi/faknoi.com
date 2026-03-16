@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Plus, Trash2, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import type { OrderItem } from "@/lib/types";
+import { useLang } from "@/lib/LangContext";
+import { t } from "@/lib/i18n";
 
 const emptyItem = (): OrderItem => ({
   shop_name: "", item_name: "", quantity: 1, note: "", fallback_option: "",
@@ -15,6 +17,7 @@ export default function CreateOrderPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tripId = searchParams.get("trip_id") || "";
+  const { lang } = useLang();
 
   const [items, setItems] = useState<OrderItem[]>([emptyItem()]);
   const [estimatedPrice, setEstimatedPrice] = useState("");
@@ -30,9 +33,9 @@ export default function CreateOrderPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!tripId) { setError("ไม่พบ Trip ID"); return; }
+    if (!tripId) { setError(t(lang, "co_err_no_trip")); return; }
     const validItems = items.filter((i) => i.shop_name && i.item_name);
-    if (validItems.length === 0) { setError("กรุณาระบุรายการอย่างน้อย 1 รายการ"); return; }
+    if (validItems.length === 0) { setError(t(lang, "co_err_no_items")); return; }
 
     setLoading(true);
     const supabase = createClient();
@@ -40,19 +43,13 @@ export default function CreateOrderPage() {
     if (!user) { router.push("/login"); return; }
 
     const { error: insertError } = await supabase.from("orders").insert({
-      trip_id: tripId,
-      buyer_id: user.id,
-      items: validItems,
+      trip_id: tripId, buyer_id: user.id, items: validItems,
       estimated_price: parseFloat(estimatedPrice) || 0,
-      status: "pending",
-      payment_confirmed: false,
+      status: "pending", payment_confirmed: false,
     });
 
-    if (insertError) { setError("เกิดข้อผิดพลาด กรุณาลองใหม่"); setLoading(false); return; }
-
-    // increment current_orders
+    if (insertError) { setError(t(lang, "co_err_generic")); setLoading(false); return; }
     await supabase.rpc("increment_trip_orders", { trip_id: tripId });
-
     router.push("/orders");
     router.refresh();
   }
@@ -64,8 +61,8 @@ export default function CreateOrderPage() {
           <ArrowLeft className="w-5 h-5 text-gray-500" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-brand-navy">สั่งออเดอร์</h1>
-          <p className="text-sm text-gray-400">ระบุรายการที่ต้องการ</p>
+          <h1 className="text-xl font-bold text-brand-navy">{t(lang, "co_title")}</h1>
+          <p className="text-sm text-gray-400">{t(lang, "co_subtitle")}</p>
         </div>
       </div>
 
@@ -75,57 +72,64 @@ export default function CreateOrderPage() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-brand-navy flex items-center gap-1.5">
                 <ShoppingBag className="w-4 h-4 text-brand-blue" />
-                รายการที่ {index + 1}
+                {t(lang, "co_item_no")} {index + 1}
               </span>
               {items.length > 1 && (
-                <button type="button" onClick={() => removeItem(index)} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
+                <button type="button" onClick={() => removeItem(index)}
+                  className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">ชื่อร้าน *</label>
-                <input type="text" className="input-field text-sm" placeholder="เช่น ร้านข้าวมันไก่" value={item.shop_name} onChange={(e) => updateItem(index, "shop_name", e.target.value)} required />
+                <label className="text-xs font-medium text-gray-600 mb-1 block">{t(lang, "co_shop_name")} *</label>
+                <input type="text" className="input-field text-sm" placeholder={t(lang, "co_shop_placeholder")}
+                  value={item.shop_name} onChange={(e) => updateItem(index, "shop_name", e.target.value)} required />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">รายการ *</label>
-                <input type="text" className="input-field text-sm" placeholder="เช่น ข้าวมันไก่" value={item.item_name} onChange={(e) => updateItem(index, "item_name", e.target.value)} required />
+                <label className="text-xs font-medium text-gray-600 mb-1 block">{t(lang, "co_item_name")} *</label>
+                <input type="text" className="input-field text-sm" placeholder={t(lang, "co_item_placeholder")}
+                  value={item.item_name} onChange={(e) => updateItem(index, "item_name", e.target.value)} required />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">จำนวน</label>
-                <input type="number" className="input-field text-sm" min={1} value={item.quantity} onChange={(e) => updateItem(index, "quantity", parseInt(e.target.value))} />
+                <label className="text-xs font-medium text-gray-600 mb-1 block">{t(lang, "co_quantity")}</label>
+                <input type="number" className="input-field text-sm" min={1} value={item.quantity}
+                  onChange={(e) => updateItem(index, "quantity", parseInt(e.target.value))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">หมายเหตุ</label>
-                <input type="text" className="input-field text-sm" placeholder="เช่น ไม่เผ็ด" value={item.note} onChange={(e) => updateItem(index, "note", e.target.value)} />
+                <label className="text-xs font-medium text-gray-600 mb-1 block">{t(lang, "co_note")}</label>
+                <input type="text" className="input-field text-sm" placeholder={t(lang, "co_note_placeholder")}
+                  value={item.note} onChange={(e) => updateItem(index, "note", e.target.value)} />
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">ตัวเลือกสำรอง (กรณีหมด)</label>
-              <input type="text" className="input-field text-sm" placeholder="เช่น เปลี่ยนเป็นข้าวหมูแดงได้" value={item.fallback_option} onChange={(e) => updateItem(index, "fallback_option", e.target.value)} />
+              <label className="text-xs font-medium text-gray-600 mb-1 block">{t(lang, "co_fallback")}</label>
+              <input type="text" className="input-field text-sm" placeholder={t(lang, "co_fallback_placeholder")}
+                value={item.fallback_option} onChange={(e) => updateItem(index, "fallback_option", e.target.value)} />
             </div>
           </div>
         ))}
 
-        <button type="button" onClick={addItem} className="w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-gray-400 hover:border-brand-blue hover:text-brand-blue transition-colors flex items-center justify-center gap-2">
-          <Plus className="w-4 h-4" />
-          เพิ่มรายการ
+        <button type="button" onClick={addItem}
+          className="w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-gray-400 hover:border-brand-blue hover:text-brand-blue transition-colors flex items-center justify-center gap-2">
+          <Plus className="w-4 h-4" />{t(lang, "co_add_item")}
         </button>
 
         <div className="card">
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">ราคาประมาณการ (บาท)</label>
-          <input type="number" className="input-field" placeholder="0" value={estimatedPrice} onChange={(e) => setEstimatedPrice(e.target.value)} />
-          <p className="text-xs text-gray-400 mt-1.5">ราคาจริงจะถูกระบุโดยผู้รับหิ้วหลังซื้อเสร็จ</p>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">{t(lang, "co_est_price")}</label>
+          <input type="number" className="input-field" placeholder="0"
+            value={estimatedPrice} onChange={(e) => setEstimatedPrice(e.target.value)} />
+          <p className="text-xs text-gray-400 mt-1.5">{t(lang, "co_est_hint")}</p>
         </div>
 
         {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">{error}</div>}
 
         <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
           {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ShoppingBag className="w-4 h-4" />}
-          {loading ? "กำลังส่งออเดอร์..." : "ยืนยันออเดอร์"}
+          {loading ? t(lang, "co_submitting") : t(lang, "co_confirm")}
         </button>
       </form>
     </div>
