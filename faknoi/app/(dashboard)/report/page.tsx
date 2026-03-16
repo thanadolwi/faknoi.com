@@ -113,10 +113,12 @@ export default function ReportPage() {
 
         {/* Subject */}
         <div className="card space-y-2">
-          <label className="text-sm font-black text-brand-navy block">หัวข้อปัญหา (ไม่บังคับ)</label>
+          <label className="text-sm font-black text-brand-navy block">
+            หัวข้อปัญหา <span className="text-red-400">*</span>
+          </label>
           <input type="text" className="input-field"
             placeholder="เช่น ผู้รับหิ้วไม่ตอบแชท, ออเดอร์หาย..."
-            value={subject} onChange={(e) => setSubject(e.target.value)} />
+            value={subject} onChange={(e) => setSubject(e.target.value)} required />
         </div>
 
         {/* Body */}
@@ -159,7 +161,7 @@ export default function ReportPage() {
           </div>
         )}
 
-        <button type="submit" disabled={loading || !body.trim()} className="btn-primary w-full py-3.5 text-base">
+        <button type="submit" disabled={loading || !body.trim() || !subject.trim()} className="btn-primary w-full py-3.5 text-base">
           {loading
             ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             : <><Upload className="w-4 h-4" /> ส่งรายงาน</>}
