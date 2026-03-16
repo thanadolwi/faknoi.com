@@ -1,117 +1,130 @@
 import Link from "next/link";
-import { ShoppingBag, ArrowRight } from "lucide-react";
-
-// Decorative SVG motifs
-function Star({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <svg className={className} style={style} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
-    </svg>
-  );
-}
-function Heart({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <svg className={className} style={style} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-    </svg>
-  );
-}
+import { ShoppingBag, ArrowRight, Zap, Shield, Star } from "lucide-react";
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen overflow-x-hidden">
-      {/* Floating decorations */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <Star className="absolute top-[8%] left-[6%] w-6 h-6 text-candy-lilac animate-spin-slow opacity-60" />
-        <Heart className="absolute top-[12%] right-[8%] w-5 h-5 text-candy-pink animate-float opacity-70" />
-        <Star className="absolute top-[35%] right-[4%] w-4 h-4 text-brand-yellow animate-spin-slow opacity-50" />
-        <Heart className="absolute bottom-[30%] left-[4%] w-6 h-6 text-candy-sky animate-float opacity-60" style={{animationDelay:"1s"}} />
-        <Star className="absolute bottom-[15%] right-[10%] w-5 h-5 text-candy-mint animate-spin-slow opacity-50" />
-        <Heart className="absolute top-[55%] left-[8%] w-4 h-4 text-candy-peach animate-float opacity-60" style={{animationDelay:"2s"}} />
-        {/* Blob shapes */}
-        <div className="absolute top-[20%] right-[-5%] w-64 h-64 bg-candy-pink/20 rounded-[60%_40%_70%_30%/50%_60%_40%_50%] blur-2xl" />
-        <div className="absolute bottom-[20%] left-[-5%] w-56 h-56 bg-candy-lilac/20 rounded-[40%_60%_30%_70%/60%_40%_50%_50%] blur-2xl" />
-      </div>
+    <main className="min-h-screen bg-white overflow-x-hidden">
 
-      {/* Navbar */}
-      <nav className="relative z-10 flex items-center justify-between px-6 py-5 max-w-5xl mx-auto">
+      {/* ── Navbar ── */}
+      <nav className="flex items-center justify-between px-6 py-4 max-w-5xl mx-auto">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-brand-navy flex items-center justify-center shadow-lg shadow-brand-navy/20">
-            <ShoppingBag className="w-5 h-5 text-brand-yellow" />
+          <div className="w-10 h-10 rounded-2xl hero-grad flex items-center justify-center shadow-blue-sm">
+            <ShoppingBag className="w-5 h-5 text-white" />
           </div>
           <span className="font-black text-xl text-brand-navy tracking-tight">FakNoi</span>
-          <Star className="w-3.5 h-3.5 text-candy-lilac" />
         </div>
         <div className="flex gap-2 items-center">
           <Link href="/login" className="text-sm font-bold text-gray-500 hover:text-brand-navy px-4 py-2 rounded-2xl transition-colors">
             เข้าสู่ระบบ
           </Link>
           <Link href="/register" className="btn-primary text-sm py-2.5 px-5">
-            สมัครฟรี ✨
+            สมัครฟรี
           </Link>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative z-10 max-w-5xl mx-auto px-6 pt-8 pb-24 text-center">
-        <div className="inline-flex items-center gap-2 bg-candy-lilac/30 border-2 border-candy-lilac/40 text-brand-navy text-xs font-black px-4 py-2 rounded-full mb-8">
-          <Star className="w-3 h-3 text-brand-blue" />
-          Trip-Based Matching · ใหม่ล่าสุด 2026
-          <Heart className="w-3 h-3 text-candy-pink" />
-        </div>
+      {/* ── Hero ── */}
+      <section className="relative max-w-5xl mx-auto px-6 pt-10 pb-20 text-center overflow-hidden">
+        {/* Blob decorations */}
+        <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-10 hero-grad blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 -left-20 w-72 h-72 rounded-full opacity-10 bg-brand-cyan blur-3xl pointer-events-none" />
 
-        <h1 className="text-5xl md:text-7xl font-black text-brand-navy leading-[1.05] mb-6 tracking-tight">
-          ฝากหน่อย
-          <br />
-          <span className="bg-gradient-to-r from-brand-blue via-[#a78bfa] to-brand-cyan bg-clip-text text-transparent bg-[length:200%] animate-gradient">
-            สั่งง่าย ใกล้ตัว
-          </span>
-          <span className="ml-2 text-4xl">🌸</span>
-        </h1>
+        {/* Doodle floating elements */}
+        <div className="absolute top-8 left-[8%] text-3xl animate-float pointer-events-none select-none opacity-70">🛵</div>
+        <div className="absolute top-16 right-[8%] text-2xl animate-float-slow pointer-events-none select-none opacity-70" style={{animationDelay:"1.5s"}}>🍜</div>
+        <div className="absolute bottom-24 left-[5%] text-2xl animate-float pointer-events-none select-none opacity-60" style={{animationDelay:"0.8s"}}>⭐</div>
+        <div className="absolute bottom-20 right-[6%] text-2xl animate-float-slow pointer-events-none select-none opacity-60" style={{animationDelay:"2s"}}>🧋</div>
 
-        <p className="text-gray-500 text-lg max-w-md mx-auto mb-10 leading-relaxed font-medium">
-          เปลี่ยนความวุ่นวายในกลุ่มแชท มาสู่ระบบออเดอร์ที่ชัดเจน
-          โปร่งใส ตรวจสอบได้ ✨
-        </p>
+        <div className="relative">
+          <div className="inline-flex items-center gap-2 bg-brand-blue/8 border border-brand-blue/15 text-brand-blue text-xs font-black px-4 py-2 rounded-full mb-8">
+            <Zap className="w-3.5 h-3.5" />
+            Trip-Based Matching · ใหม่ล่าสุด 2026
+          </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mb-10">
-          <Link href="/register" className="btn-primary text-base py-4 px-8 flex items-center justify-center gap-2 text-lg">
-            เริ่มใช้งานฟรี <ArrowRight className="w-5 h-5" />
-          </Link>
-          <Link href="/login" className="btn-ghost text-base py-4 px-8 flex items-center justify-center">
-            เข้าสู่ระบบ
-          </Link>
-        </div>
+          <h1 className="text-5xl md:text-7xl font-black text-brand-navy leading-[1.05] mb-5 tracking-tight">
+            ฝากหน่อย
+            <br />
+            <span className="text-grad">สั่งง่าย ใกล้ตัว</span>
+          </h1>
 
-        <div className="flex items-center justify-center gap-6 text-sm text-gray-400 font-bold">
-          <span>✅ ฟรี 100%</span>
-          <span>⚡ ใช้งานได้ทันที</span>
-          <span>🔒 ปลอดภัย</span>
+          <p className="text-gray-500 text-lg max-w-md mx-auto mb-10 leading-relaxed font-medium">
+            แพลตฟอร์มรับหิ้วอาหารในมหาวิทยาลัย เปลี่ยนความวุ่นวายในกลุ่มแชท
+            มาสู่ระบบออเดอร์ที่ชัดเจน โปร่งใส ✨
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-12">
+            <Link href="/register" className="btn-primary text-base py-4 px-8">
+              เริ่มใช้งานฟรี <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link href="/login" className="btn-ghost text-base py-4 px-8">
+              เข้าสู่ระบบ
+            </Link>
+          </div>
+
+          {/* Stats row */}
+          <div className="flex flex-wrap items-center justify-center gap-8">
+            {[
+              { num: "ฟรี", label: "ไม่มีค่าใช้จ่าย" },
+              { num: "Real-time", label: "แชทกับผู้รับหิ้ว" },
+              { num: "ง่าย", label: "ใช้งานได้ทันที" },
+            ].map((s, i) => (
+              <div key={i} className="text-center">
+                <div className="text-xl font-black text-grad">{s.num}</div>
+                <div className="text-xs text-gray-400 font-medium mt-0.5">{s.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="relative z-10 py-20 px-6">
+      {/* ── How it works ── */}
+      <section className="py-16 px-6 bg-gray-50/60">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 text-brand-blue font-black text-xs uppercase tracking-widest mb-3">
-              <Star className="w-3.5 h-3.5" /> ทำไมต้อง FakNoi <Star className="w-3.5 h-3.5" />
-            </div>
-            <h2 className="text-3xl font-black text-brand-navy mt-2 tracking-tight">
-              ระบบที่ออกแบบมาเพื่อ
-              <span className="text-brand-blue"> ชุมชนหอพัก</span> 💜
-            </h2>
+          <div className="text-center mb-10">
+            <p className="text-xs font-black text-brand-blue uppercase tracking-widest mb-2">วิธีใช้งาน</p>
+            <h2 className="text-3xl font-black text-brand-navy tracking-tight">ง่ายแค่ 3 ขั้นตอน</h2>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {[
-              { emoji: "⚡", bg: "bg-candy-sky/40", border: "border-candy-sky", title: "Trip-Based Matching", desc: "ผู้รับหิ้วประกาศทริปล่วงหน้า ผู้ซื้อเลือกทริปที่ผ่านหอพักตัวเอง ไม่มีออเดอร์ตกหล่น" },
-              { emoji: "💸", bg: "bg-candy-lemon/40", border: "border-candy-lemon", title: "ชำระเงินโปร่งใส", desc: "ระบุราคาสุทธิจริงหลังซื้อ อัปโหลดสลิปยืนยัน ไม่มีความสับสนเรื่องยอดเงิน" },
-              { emoji: "🛵", bg: "bg-candy-pink/30", border: "border-candy-pink", title: "Micro-Retail Access", desc: "สั่งจากร้านรถเข็นหรือร้านใต้หอพักที่แอปใหญ่เข้าไม่ถึง พร้อมตัวเลือกสำรอง" },
+              { step: "01", emoji: "🔍", title: "เลือกทริป", desc: "ดูทริปที่ผ่านหอพักของคุณ เลือกตามเวลาและเส้นทาง" },
+              { step: "02", emoji: "�", title: "สั่งออเดอร์", desc: "ระบุรายการที่ต้องการ พร้อมตัวเลือกสำรอง" },
+              { step: "03", emoji: "🎉", title: "รับของ", desc: "ติดตามสถานะ real-time แชทกับผู้รับหิ้วได้เลย" },
+            ].map((s, i) => (
+              <div key={i} className="card group hover:scale-[1.02] transition-all duration-200 cursor-default">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-2xl hero-grad flex items-center justify-center flex-shrink-0 shadow-blue-sm">
+                    <span className="text-white text-xs font-black">{s.step}</span>
+                  </div>
+                  <div>
+                    <div className="text-2xl mb-2">{s.emoji}</div>
+                    <h3 className="font-black text-brand-navy mb-1">{s.title}</h3>
+                    <p className="text-sm text-gray-500 leading-relaxed font-medium">{s.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features ── */}
+      <section className="py-16 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="text-xs font-black text-brand-blue uppercase tracking-widest mb-2">ฟีเจอร์</p>
+            <h2 className="text-3xl font-black text-brand-navy tracking-tight">ทำไมต้อง FakNoi?</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              { icon: <Zap className="w-5 h-5 text-white" />, title: "Trip Matching", desc: "จับคู่ทริปอัตโนมัติ ไม่มีออเดอร์ตกหล่น" },
+              { icon: <Shield className="w-5 h-5 text-white" />, title: "โปร่งใส 100%", desc: "อัปโหลดสลิป ยืนยันราคาจริง ไม่มีสับสน" },
+              { icon: <Star className="w-5 h-5 text-white" />, title: "Micro-Retail", desc: "สั่งร้านรถเข็นที่แอปใหญ่เข้าไม่ถึง" },
             ].map((f, i) => (
-              <div key={i} className={`card-candy ${f.bg} border-2 ${f.border} hover:scale-[1.02] hover:-translate-y-1 transition-all duration-200`}>
-                <div className="text-4xl mb-4">{f.emoji}</div>
-                <h3 className="font-black text-brand-navy mb-2 text-lg">{f.title}</h3>
+              <div key={i} className="card hover:scale-[1.02] transition-all duration-200 cursor-default">
+                <div className="w-11 h-11 rounded-2xl hero-grad flex items-center justify-center mb-4 shadow-blue-sm">
+                  {f.icon}
+                </div>
+                <h3 className="font-black text-brand-navy mb-1.5">{f.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed font-medium">{f.desc}</p>
               </div>
             ))}
@@ -119,34 +132,31 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="relative z-10 px-6 pb-20">
+      {/* ── CTA ── */}
+      <section className="px-6 pb-20">
         <div className="max-w-5xl mx-auto">
-          <div className="relative bg-brand-navy rounded-[2.5rem] p-10 text-center overflow-hidden">
+          <div className="relative hero-grad rounded-[2.5rem] p-10 text-center overflow-hidden">
             <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-candy-lilac/20 rounded-full -translate-y-1/2 translate-x-1/4 blur-2xl" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-candy-pink/15 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-2xl" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-brand-yellow/15 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
             </div>
-            {/* Floating stars in CTA */}
-            <Star className="absolute top-6 left-8 w-5 h-5 text-candy-lilac/50 animate-spin-slow" />
-            <Heart className="absolute top-8 right-10 w-4 h-4 text-candy-pink/50 animate-float" />
-            <Star className="absolute bottom-6 right-8 w-4 h-4 text-brand-yellow/50 animate-spin-slow" />
+            <div className="absolute top-6 left-8 text-3xl animate-float pointer-events-none">🛵</div>
+            <div className="absolute bottom-6 right-8 text-2xl animate-float-slow pointer-events-none" style={{animationDelay:"1s"}}>⭐</div>
             <div className="relative">
-              <div className="text-5xl mb-4">🚀</div>
+              <div className="text-5xl mb-4">🎓</div>
               <h2 className="text-3xl font-black text-white mb-3 tracking-tight">พร้อมแล้วหรือยัง?</h2>
-              <p className="text-white/60 mb-8 font-medium">สมัครฟรี ไม่มีค่าใช้จ่าย ใช้งานได้ทันที</p>
+              <p className="text-white/70 mb-8 font-medium">สมัครฟรี ไม่มีค่าใช้จ่าย ใช้งานได้ทันที</p>
               <Link href="/register"
-                className="inline-flex items-center gap-2 bg-brand-yellow text-brand-navy font-black py-4 px-10 rounded-2xl hover:brightness-105 active:scale-95 transition-all duration-150 shadow-xl shadow-brand-yellow/20 text-lg">
-                เริ่มเลย ✨ <ArrowRight className="w-5 h-5" />
+                className="inline-flex items-center gap-2 bg-brand-yellow text-brand-navy font-black py-4 px-10 rounded-2xl hover:brightness-105 active:scale-95 transition-all duration-150 shadow-xl text-lg">
+                เริ่มเลย <ArrowRight className="w-5 h-5" />
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      <footer className="relative z-10 text-center pb-10 text-sm text-gray-400 font-bold">
-        © 2026 FakNoi · สร้างเพื่อชุมชนมหาวิทยาลัย
-        <Heart className="inline w-3.5 h-3.5 text-candy-pink ml-1 mb-0.5" />
+      <footer className="text-center pb-10 text-sm text-gray-400 font-medium border-t border-gray-100 pt-8">
+        © 2026 FakNoi · สร้างเพื่อชุมชนมหาวิทยาลัย 💙
       </footer>
     </main>
   );

@@ -11,43 +11,48 @@ const config: Config = {
       colors: {
         brand: {
           yellow: "#FFDE42",
-          cyan: "#53CBF3",
-          blue: "#5478FF",
-          navy: "#111FA2",
-        },
-        candy: {
-          pink:   "#FFB3D9",
-          lilac:  "#D4B8FF",
-          mint:   "#B8F0E0",
-          peach:  "#FFD4B8",
-          sky:    "#B8E8FF",
-          lemon:  "#FFF5B8",
+          cyan:   "#53CBF3",
+          blue:   "#5478FF",
+          navy:   "#111FA2",
         },
       },
       fontFamily: {
         sans: ["var(--font-inter)", "sans-serif"],
       },
+      backgroundImage: {
+        "blue-grad": "linear-gradient(135deg, #111FA2 0%, #5478FF 50%, #53CBF3 100%)",
+        "blue-grad-soft": "linear-gradient(135deg, #5478FF 0%, #53CBF3 100%)",
+        "yellow-grad": "linear-gradient(135deg, #FFDE42 0%, #FFB800 100%)",
+      },
+      boxShadow: {
+        "blue-sm":  "0 4px 16px rgba(84,120,255,0.18)",
+        "blue-md":  "0 8px 32px rgba(84,120,255,0.22)",
+        "blue-lg":  "0 16px 48px rgba(84,120,255,0.25)",
+        "card":     "0 2px 16px rgba(17,31,162,0.07)",
+        "card-hover": "0 8px 32px rgba(84,120,255,0.14)",
+      },
       borderRadius: {
-        blob: "60% 40% 70% 30% / 50% 60% 40% 50%",
+        "4xl": "2rem",
+        "5xl": "2.5rem",
       },
       animation: {
-        gradient: "gradient 4s ease infinite",
-        float: "float 6s ease-in-out infinite",
-        wiggle: "wiggle 0.4s ease-in-out",
-        "spin-slow": "spin 8s linear infinite",
+        "float":      "float 5s ease-in-out infinite",
+        "float-slow": "float 8s ease-in-out infinite",
+        "pop":        "pop 0.2s ease-out",
+        "gradient":   "gradient 4s ease infinite",
       },
       keyframes: {
-        gradient: {
-          "0%, 100%": { backgroundPosition: "0% 50%" },
-          "50%": { backgroundPosition: "100% 50%" },
-        },
         float: {
-          "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-8px)" },
+          "0%,100%": { transform: "translateY(0)" },
+          "50%":     { transform: "translateY(-10px)" },
         },
-        wiggle: {
-          "0%, 100%": { transform: "rotate(-3deg)" },
-          "50%": { transform: "rotate(3deg)" },
+        pop: {
+          "0%":   { transform: "scale(0.95)", opacity: "0" },
+          "100%": { transform: "scale(1)",    opacity: "1" },
+        },
+        gradient: {
+          "0%,100%": { backgroundPosition: "0% 50%" },
+          "50%":     { backgroundPosition: "100% 50%" },
         },
       },
     },

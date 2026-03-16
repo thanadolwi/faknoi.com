@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { Plus, ArrowRight, Clock } from "lucide-react";
+import { ArrowRight, Clock } from "lucide-react";
 import DashboardChats from "@/components/DashboardChats";
 
 export const revalidate = 30;
@@ -54,21 +54,24 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-5">
       {/* Welcome Hero */}
-      <div className="relative bg-brand-navy rounded-3xl p-6 text-white overflow-hidden">
+      <div className="relative rounded-3xl p-6 text-white overflow-hidden hero-grad"
+        style={{boxShadow:"0 8px 32px rgba(84,120,255,0.25)"}}>
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-brand-blue/40 rounded-full -translate-y-1/2 translate-x-1/4 blur-2xl" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand-yellow/20 rounded-full translate-y-1/2 -translate-x-1/4 blur-xl" />
+          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand-yellow/15 rounded-full translate-y-1/2 -translate-x-1/4 blur-xl" />
         </div>
+        <div className="absolute top-4 right-6 text-3xl animate-float pointer-events-none select-none opacity-60">🛵</div>
         <div className="relative">
           <p className="text-white/60 text-sm font-medium mb-0.5">สวัสดี 👋</p>
           <h1 className="text-2xl font-black mb-5 tracking-tight">{username}</h1>
           <div className="flex flex-wrap gap-2.5">
             <Link href="/trips/create"
-              className="flex items-center gap-2 bg-brand-yellow text-brand-navy text-sm font-black px-4 py-2.5 rounded-2xl hover:brightness-105 active:scale-95 transition-all duration-150 shadow-lg shadow-brand-yellow/20">
-              <Plus className="w-4 h-4" /> เปิดทริปใหม่
+              className="flex items-center gap-2 bg-brand-yellow text-brand-navy text-sm font-black px-4 py-2.5 rounded-2xl hover:brightness-105 active:scale-95 transition-all duration-150"
+              style={{boxShadow:"0 4px 12px rgba(255,222,66,0.35)"}}>
+              + เปิดทริปใหม่
             </Link>
             <Link href="/trips"
-              className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm font-bold px-4 py-2.5 rounded-2xl hover:bg-white/25 active:scale-95 transition-all duration-150 border border-white/20">
+              className="flex items-center gap-2 bg-white/20 text-white text-sm font-bold px-4 py-2.5 rounded-2xl hover:bg-white/30 active:scale-95 transition-all duration-150 border border-white/20">
               🛵 ดูทริปทั้งหมด
             </Link>
           </div>
@@ -122,7 +125,7 @@ export default async function DashboardPage() {
             <div className="text-4xl mb-3">🛵</div>
             <p className="text-sm text-gray-400 font-medium mb-3">ยังไม่มีทริปที่เปิดอยู่</p>
             <Link href="/trips/create" className="btn-primary text-sm py-2 px-5 inline-flex items-center gap-2">
-              <Plus className="w-4 h-4" /> เปิดทริปแรก
+              + เปิดทริปแรก
             </Link>
           </div>
         )}

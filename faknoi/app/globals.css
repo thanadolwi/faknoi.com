@@ -4,67 +4,83 @@
 
 :root {
   --brand-yellow: #FFDE42;
-  --brand-cyan: #53CBF3;
-  --brand-blue: #5478FF;
-  --brand-navy: #111FA2;
+  --brand-cyan:   #53CBF3;
+  --brand-blue:   #5478FF;
+  --brand-navy:   #111FA2;
 }
 
 @layer base {
-  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-behavior: smooth; }
   body {
-    @apply text-gray-800 antialiased;
+    @apply bg-white text-gray-800 antialiased;
     overscroll-behavior: none;
-    background-color: #FFFBFF;
-    background-image:
-      radial-gradient(ellipse 55% 45% at 5% 5%,   rgba(212,184,255,0.35) 0%, transparent 55%),
-      radial-gradient(ellipse 45% 55% at 95% 8%,  rgba(255,179,217,0.30) 0%, transparent 55%),
-      radial-gradient(ellipse 50% 40% at 90% 92%,  rgba(84,120,255,0.15) 0%, transparent 55%),
-      radial-gradient(ellipse 60% 45% at 8% 95%,  rgba(83,203,243,0.20) 0%, transparent 55%),
-      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(255,222,66,0.08) 0%, transparent 60%);
-    background-attachment: fixed;
   }
   button, a { -webkit-tap-highlight-color: transparent; }
   input, select, textarea { font-size: 16px !important; }
 }
 
 @layer components {
+  /* Buttons */
   .btn-primary {
-    @apply bg-brand-blue text-white font-black py-3 px-5 rounded-2xl
-           transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed
-           select-none active:scale-95 shadow-lg shadow-brand-blue/20;
-    @apply md:hover:brightness-110;
+    @apply inline-flex items-center justify-center gap-2 font-black text-white
+           py-3 px-5 rounded-2xl select-none transition-all duration-200
+           disabled:opacity-40 disabled:cursor-not-allowed active:scale-95;
+    background: linear-gradient(135deg, #5478FF 0%, #53CBF3 100%);
+    box-shadow: 0 6px 20px rgba(84,120,255,0.30);
   }
+  .btn-primary:hover { filter: brightness(1.06); }
+
   .btn-secondary {
-    @apply bg-brand-yellow text-brand-navy font-black py-3 px-5 rounded-2xl
-           transition-all duration-200 select-none active:scale-95
-           shadow-md shadow-brand-yellow/30;
-    @apply md:hover:brightness-105;
+    @apply inline-flex items-center justify-center gap-2 font-black
+           text-brand-navy py-3 px-5 rounded-2xl select-none
+           transition-all duration-200 active:scale-95;
+    background: linear-gradient(135deg, #FFDE42 0%, #FFB800 100%);
+    box-shadow: 0 4px 16px rgba(255,222,66,0.35);
   }
+  .btn-secondary:hover { filter: brightness(1.04); }
+
   .btn-ghost {
-    @apply bg-white/80 backdrop-blur-sm text-gray-700 font-bold py-3 px-5 rounded-2xl
-           border-2 border-candy-lilac/40 transition-all duration-200 select-none active:scale-95;
-    @apply md:hover:bg-white;
+    @apply inline-flex items-center justify-center gap-2 font-bold text-brand-blue
+           py-3 px-5 rounded-2xl border-2 border-brand-blue/20 bg-brand-blue/5
+           select-none transition-all duration-200 active:scale-95;
   }
+  .btn-ghost:hover { @apply bg-brand-blue/10 border-brand-blue/30; }
+
+  /* Inputs */
   .input-field {
-    @apply w-full px-4 py-3 rounded-2xl border-2 border-candy-lilac/40 bg-white/90
-           focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10
-           transition-all duration-200 placeholder:text-gray-300 font-medium;
+    @apply w-full px-4 py-3 rounded-2xl border-2 border-gray-100 bg-gray-50
+           focus:outline-none focus:border-brand-blue focus:bg-white
+           focus:ring-4 focus:ring-brand-blue/10
+           transition-all duration-200 placeholder:text-gray-300 font-medium text-gray-800;
   }
+
+  /* Cards */
   .card {
-    @apply bg-white/80 backdrop-blur-sm rounded-3xl border-2 border-white
-           shadow-[0_4px_24px_rgba(84,120,255,0.07)] p-4 md:p-5;
+    @apply bg-white rounded-3xl border border-gray-100 p-4 md:p-5;
+    box-shadow: 0 2px 16px rgba(17,31,162,0.07);
   }
-  .card-candy {
-    @apply bg-white/90 backdrop-blur-sm rounded-3xl border-2 p-4 md:p-5
-           shadow-[0_4px_24px_rgba(212,184,255,0.15)];
-  }
+  .card:hover { box-shadow: 0 8px 32px rgba(84,120,255,0.12); }
+
+  /* Pills / badges */
   .pill {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black;
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black;
   }
+
+  /* Gradient text */
+  .text-grad {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #5478FF 0%, #53CBF3 100%);
+  }
+
+  /* Gradient bg hero */
+  .hero-grad {
+    background: linear-gradient(135deg, #111FA2 0%, #5478FF 55%, #53CBF3 100%);
+  }
+
   .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 }
 
 * { -webkit-font-smoothing: antialiased; }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(212,184,255,0.5); border-radius: 99px; }
+::-webkit-scrollbar-thumb { background: rgba(84,120,255,0.25); border-radius: 99px; }

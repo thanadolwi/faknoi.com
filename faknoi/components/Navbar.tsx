@@ -25,12 +25,13 @@ export default function Navbar({ username }: { username: string }) {
 
   return (
     <>
-      {/* Desktop top navbar */}
-      <header className="hidden md:block bg-white/75 backdrop-blur-xl border-b-2 border-candy-lilac/20 sticky top-0 z-50 shadow-sm shadow-candy-lilac/10">
+      {/* Desktop */}
+      <header className="hidden md:block bg-white border-b border-gray-100 sticky top-0 z-50"
+        style={{boxShadow:"0 2px 12px rgba(84,120,255,0.06)"}}>
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-2xl bg-brand-navy flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200">
-              <ShoppingBag className="w-4.5 h-4.5 text-brand-yellow" />
+            <div className="w-9 h-9 rounded-2xl hero-grad flex items-center justify-center shadow-blue-sm group-hover:scale-105 transition-transform duration-200">
+              <ShoppingBag className="w-4 h-4 text-white" />
             </div>
             <span className="font-black text-brand-navy tracking-tight text-lg">FakNoi</span>
           </Link>
@@ -42,9 +43,10 @@ export default function Navbar({ username }: { username: string }) {
                 <Link key={href} href={href} className={clsx(
                   "flex items-center gap-1.5 px-4 py-2 rounded-2xl text-sm font-bold transition-all duration-200",
                   active
-                    ? "bg-brand-blue text-white shadow-md shadow-brand-blue/25"
+                    ? "text-white shadow-blue-sm"
                     : "text-gray-500 hover:text-brand-navy hover:bg-brand-blue/5"
-                )}>
+                )}
+                style={active ? {background:"linear-gradient(135deg,#5478FF,#53CBF3)"} : {}}>
                   <Icon className="w-4 h-4" />{label}
                 </Link>
               );
@@ -52,8 +54,8 @@ export default function Navbar({ username }: { username: string }) {
           </nav>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-brand-blue/5 px-3 py-1.5 rounded-2xl">
-              <div className="w-6 h-6 rounded-full bg-brand-navy flex items-center justify-center">
+            <div className="flex items-center gap-2 bg-brand-blue/5 px-3 py-1.5 rounded-2xl border border-brand-blue/10">
+              <div className="w-6 h-6 rounded-full hero-grad flex items-center justify-center">
                 <span className="text-white text-[10px] font-black">{username[0]?.toUpperCase()}</span>
               </div>
               <span className="text-sm font-bold text-brand-navy">{username}</span>
@@ -67,17 +69,17 @@ export default function Navbar({ username }: { username: string }) {
       </header>
 
       {/* Mobile top bar */}
-      <header className="md:hidden bg-white/75 backdrop-blur-xl border-b-2 border-candy-lilac/20 sticky top-0 z-50"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      <header className="md:hidden bg-white border-b border-gray-100 sticky top-0 z-50"
+        style={{paddingTop:"env(safe-area-inset-top)", boxShadow:"0 2px 12px rgba(84,120,255,0.06)"}}>
         <div className="px-4 h-14 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-brand-navy flex items-center justify-center shadow-md">
-              <ShoppingBag className="w-4 h-4 text-brand-yellow" />
+            <div className="w-8 h-8 rounded-xl hero-grad flex items-center justify-center shadow-blue-sm">
+              <ShoppingBag className="w-4 h-4 text-white" />
             </div>
             <span className="font-black text-brand-navy tracking-tight">FakNoi</span>
           </Link>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-brand-navy flex items-center justify-center">
+            <div className="w-7 h-7 rounded-full hero-grad flex items-center justify-center">
               <span className="text-white text-[10px] font-black">{username[0]?.toUpperCase()}</span>
             </div>
             <button onClick={handleLogout}
@@ -89,23 +91,21 @@ export default function Navbar({ username }: { username: string }) {
       </header>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-xl border-t-2 border-candy-lilac/20 shadow-lg shadow-candy-lilac/10"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100"
+        style={{paddingBottom:"env(safe-area-inset-bottom)", boxShadow:"0 -4px 20px rgba(84,120,255,0.08)"}}>
         <div className="flex px-2 py-1">
           {navItems.map(({ href, label, emoji }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
-              <Link key={href} href={href} className={clsx(
-                "flex-1 flex flex-col items-center gap-0.5 py-2 rounded-2xl transition-all duration-200",
-                active ? "text-brand-blue" : "text-gray-400"
-              )}>
+              <Link key={href} href={href} className="flex-1 flex flex-col items-center gap-0.5 py-2 rounded-2xl transition-all duration-200">
                 <div className={clsx(
                   "w-12 h-8 flex items-center justify-center rounded-2xl transition-all duration-200",
-                  active && "bg-brand-blue/10 scale-110"
-                )}>
+                  active ? "scale-110" : ""
+                )}
+                style={active ? {background:"linear-gradient(135deg,#5478FF,#53CBF3)"} : {}}>
                   <span className="text-xl leading-none">{emoji}</span>
                 </div>
-                <span className={clsx("text-[10px] font-bold", active ? "text-brand-blue" : "text-gray-400")}>
+                <span className={clsx("text-[10px] font-black", active ? "text-brand-blue" : "text-gray-400")}>
                   {label}
                 </span>
               </Link>
