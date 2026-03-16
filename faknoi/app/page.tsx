@@ -3,7 +3,7 @@ import { ShoppingBag, Zap, Shield, TrendingUp, ArrowRight, Sparkles } from "luci
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-[#F0F2FF] overflow-x-hidden">
+    <main className="min-h-screen overflow-x-hidden">
       {/* Navbar */}
       <nav className="flex items-center justify-between px-6 py-5 max-w-5xl mx-auto">
         <div className="flex items-center gap-2.5">
