@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import {
   Globe, Lock, Eye, EyeOff, Sun, Moon, Accessibility,
   Volume2, Brain, MoreHorizontal, Check, ChevronRight, LogOut
 } from "lucide-react";
+import VisualAccessibility from "@/components/VisualAccessibility";
 
 type Lang = "th" | "en" | "zh" | "hi";
 type Theme = "light" | "dark";
@@ -180,31 +181,13 @@ export default function AccountPage() {
     localStorage.setItem("faknoi_theme", theme);
   }, [theme]);
 
-  // TTS click handler
-  const handleTTSClick = useCallback((e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    const text = target.innerText || target.textContent || "";
-    if (!text.trim()) return;
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(text.trim());
-      utter.lang = lang === "th" ? "th-TH" : lang === "zh" ? "zh-CN" : lang === "hi" ? "hi-IN" : "en-US";
-      window.speechSynthesis.speak(utter);
-    }
-  }, [lang]);
+  // TTS click handler — now handled by VisualAccessibility component
 
   // Apply UD visual
   useEffect(() => {
     document.documentElement.classList.toggle("ud-visual", udVisual);
     localStorage.setItem("ud_visual", udVisual ? "1" : "0");
-    if (udVisual) {
-      document.addEventListener("click", handleTTSClick);
-    } else {
-      document.removeEventListener("click", handleTTSClick);
-      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-    }
-    return () => document.removeEventListener("click", handleTTSClick);
-  }, [udVisual, handleTTSClick]);
+  }, [udVisual]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("ud-hearing", udHearing);
@@ -359,8 +342,7 @@ export default function AccountPage() {
             <p className="mt-3 text-xs text-brand-blue font-bold bg-brand-blue/5 rounded-2xl px-3 py-2">
               {t.ttsNote}
             </p>
-          )}
-        </div>
+          )}        </div>
 
         {/* Theme */}
         <div className="card">
@@ -392,6 +374,9 @@ export default function AccountPage() {
           <LogOut className="w-4 h-4" /> {t.logout}
         </button>
       </div>
+
+      {/* Visual Accessibility floating widget */}
+      {udVisual && <VisualAccessibility lang={lang} />}
     </div>
   );
 }
