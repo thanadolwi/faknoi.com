@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { TrendingUp, AlertCircle, Upload, ImageIcon, X, CheckCircle } from "lucide-react";
+import { useLang } from "@/lib/LangContext";
+import { t } from "@/lib/i18n";
 
 const MAX_SIZE = 500 * 1024;
 
@@ -15,6 +17,7 @@ export default function WalletPage() {
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { lang } = useLang();
 
   useEffect(() => {
     async function load() {
@@ -44,8 +47,8 @@ export default function WalletPage() {
     const f = e.target.files?.[0];
     setFileError("");
     if (!f) return;
-    if (f.size > MAX_SIZE) { setFileError("ไฟล์ใหญ่เกิน 500KB"); return; }
-    if (!f.type.startsWith("image/")) { setFileError("รองรับเฉพาะรูปภาพ"); return; }
+    if (f.size > MAX_SIZE) { setFileError(t(lang, "w_file_too_big")); return; }
+    if (!f.type.startsWith("image/")) { setFileError(t(lang, "w_file_type")); return; }
     setFile(f);
     setPreview(URL.createObjectURL(f));
   }
@@ -58,7 +61,7 @@ export default function WalletPage() {
     const ext = file.name.split(".").pop();
     const path = `${user!.id}/fee-slip-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("payment-slips").upload(path, file, { upsert: true });
-    if (error) { setFileError("อัปโหลดไม่สำเร็จ"); setUploading(false); return; }
+    if (error) { setFileError(t(lang, "w_upload_fail")); setUploading(false); return; }
     setUploaded(true);
     setUploading(false);
   }
@@ -74,50 +77,45 @@ export default function WalletPage() {
   return (
     <div className="max-w-lg mx-auto space-y-5 pb-10">
       <div>
-        <h1 className="text-xl font-black text-brand-navy">💰 ถุงเงิน</h1>
-        <p className="text-sm text-gray-400 mt-0.5">สรุปยอดราคาสุทธิและค่าบริการ FakNoi</p>
+        <h1 className="text-xl font-black text-brand-navy">{t(lang, "w_title")}</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{t(lang, "w_subtitle")}</p>
       </div>
 
-      {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3">
         <div className="card text-center py-5">
-          <p className="text-xs text-gray-400 font-medium mb-1">ยอดรวมราคาสุทธิ</p>
+          <p className="text-xs text-gray-400 font-medium mb-1">{t(lang, "w_total")}</p>
           <p className="text-2xl font-black text-brand-navy">฿{totalActual.toFixed(2)}</p>
-          <p className="text-xs text-gray-300 mt-1">{orders.length} ออเดอร์</p>
+          <p className="text-xs text-gray-300 mt-1">{orders.length} {t(lang, "w_orders_count")}</p>
         </div>
         <div className="card text-center py-5" style={{background:"linear-gradient(135deg,#5478FF,#53CBF3)"}}>
-          <p className="text-xs text-white/70 font-medium mb-1">ค้างชำระ FakNoi (5%)</p>
+          <p className="text-xs text-white/70 font-medium mb-1">{t(lang, "w_fee_label")}</p>
           <p className="text-2xl font-black text-white">฿{totalFee.toFixed(2)}</p>
         </div>
       </div>
 
-      {/* Payment info + slip upload — แสดงเฉพาะเมื่อมียอดค้างชำระ */}
       {hasFee && (
         <>
           <div className="card border-2 border-brand-yellow/40 bg-brand-yellow/5">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-black text-brand-navy text-sm mb-1">ช่องทางชำระค่าบริการ FakNoi</p>
+                <p className="font-black text-brand-navy text-sm mb-1">{t(lang, "w_payment_channel")}</p>
                 <p className="text-sm text-gray-600 font-medium">
-                  PromptPay: <span className="font-black text-brand-navy">0812345678</span>
+                  {t(lang, "w_promptpay")}: <span className="font-black text-brand-navy">0812345678</span>
                 </p>
-                <p className="text-xs text-gray-400 mt-1">ชื่อบัญชี: FakNoi Platform · โอนทุกสิ้นเดือน</p>
+                <p className="text-xs text-gray-400 mt-1">{t(lang, "w_account_name")}</p>
               </div>
             </div>
           </div>
 
-          {/* Slip upload */}
           <div className="card space-y-3">
-            <p className="font-black text-brand-navy text-sm">
-              📎 แนบสลิปการโอนเงิน
-            </p>
-            <p className="text-xs text-gray-400 font-medium">ขนาดไม่เกิน 500KB</p>
+            <p className="font-black text-brand-navy text-sm">{t(lang, "w_attach_slip")}</p>
+            <p className="text-xs text-gray-400 font-medium">{t(lang, "w_slip_size")}</p>
 
             {uploaded ? (
               <div className="flex items-center gap-3 bg-green-50 border border-green-100 rounded-2xl px-4 py-3">
                 <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <p className="text-sm font-bold text-green-700">ส่งสลิปเรียบร้อยแล้ว ขอบคุณ! 🙏</p>
+                <p className="text-sm font-bold text-green-700">{t(lang, "w_slip_sent")}</p>
               </div>
             ) : (
               <>
@@ -128,36 +126,27 @@ export default function WalletPage() {
                   {preview ? (
                     <div className="relative">
                       <img src={preview} alt="slip" className="max-h-40 rounded-xl object-contain" />
-                      <button
-                        type="button"
+                      <button type="button"
                         onClick={(e) => { e.stopPropagation(); setFile(null); setPreview(null); }}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center"
-                      >
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center">
                         <X className="w-3 h-3" />
                       </button>
                     </div>
                   ) : (
                     <>
                       <ImageIcon className="w-8 h-8 text-gray-300" />
-                      <p className="text-xs text-gray-400 text-center font-medium">แตะเพื่อเลือกรูปสลิป</p>
+                      <p className="text-xs text-gray-400 text-center font-medium">{t(lang, "w_slip_tap")}</p>
                     </>
                   )}
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
-
-                {fileError && (
-                  <p className="text-xs text-red-500 font-medium">{fileError}</p>
-                )}
-
-                <button
-                  onClick={handleUpload}
-                  disabled={!file || uploading}
-                  className="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2"
-                >
+                {fileError && <p className="text-xs text-red-500 font-medium">{fileError}</p>}
+                <button onClick={handleUpload} disabled={!file || uploading}
+                  className="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2">
                   {uploading
                     ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     : <Upload className="w-4 h-4" />}
-                  {uploading ? "กำลังอัปโหลด..." : "ส่งสลิป"}
+                  {uploading ? t(lang, "w_uploading") : t(lang, "w_send_slip")}
                 </button>
               </>
             )}
@@ -165,11 +154,10 @@ export default function WalletPage() {
         </>
       )}
 
-      {/* Order list */}
       <div>
         <h2 className="font-black text-brand-navy mb-3 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-brand-blue" />
-          รายการออเดอร์ที่ส่งสำเร็จ
+          {t(lang, "w_completed_orders")}
         </h2>
         {orders.length > 0 ? (
           <div className="space-y-2.5">
@@ -186,7 +174,7 @@ export default function WalletPage() {
                 <div className="text-right">
                   <p className="font-black text-brand-navy">฿{Number(o.final_price).toFixed(2)}</p>
                   <p className="text-xs text-brand-blue font-bold">
-                    ค่าบริการ ฿{(Number(o.final_price) * 0.05).toFixed(2)}
+                    {t(lang, "w_fee_per")} ฿{(Number(o.final_price) * 0.05).toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -195,8 +183,8 @@ export default function WalletPage() {
         ) : (
           <div className="card text-center py-12">
             <div className="text-4xl mb-3">💰</div>
-            <p className="text-sm text-gray-400 font-medium">ยังไม่มีรายการ</p>
-            <p className="text-xs text-gray-300 mt-1">รายการจะปรากฏหลังส่งออเดอร์สำเร็จและมีการระบุราคาสุทธิ</p>
+            <p className="text-sm text-gray-400 font-medium">{t(lang, "w_no_orders")}</p>
+            <p className="text-xs text-gray-300 mt-1">{t(lang, "w_no_orders_hint")}</p>
           </div>
         )}
       </div>

@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Send, MessageCircle, ChevronDown } from "lucide-react";
+import { useLang } from "@/lib/LangContext";
+import { t } from "@/lib/i18n";
 
 interface Message {
   id: string;
@@ -27,6 +29,7 @@ export default function OrderChat({ orderId, currentUserId, currentUsername, emb
   const [unread, setUnread] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
+  const { lang } = useLang();
 
   // Load initial messages
   useEffect(() => {
@@ -105,7 +108,7 @@ export default function OrderChat({ orderId, currentUserId, currentUsername, emb
       >
         <div className="flex items-center gap-2">
           <MessageCircle className="w-4 h-4 text-brand-blue" />
-          <span className="text-sm font-semibold text-brand-navy">แชทกับผู้รับหิ้ว</span>
+          <span className="text-sm font-semibold text-brand-navy">{t(lang,"chat_title")}</span>
           {unread > 0 && (
             <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
               {unread}
@@ -122,7 +125,7 @@ export default function OrderChat({ orderId, currentUserId, currentUsername, emb
           <div className="h-72 overflow-y-auto px-4 py-3 space-y-3 bg-gray-50">
             {messages.length === 0 && (
               <div className="flex items-center justify-center h-full">
-                <p className="text-sm text-gray-400">ยังไม่มีข้อความ เริ่มแชทได้เลย</p>
+                <p className="text-sm text-gray-400">{t(lang,"chat_no_msg")}</p>
               </div>
             )}
             {messages.map((msg) => {
@@ -151,7 +154,7 @@ export default function OrderChat({ orderId, currentUserId, currentUsername, emb
             <input
               type="text"
               className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue text-sm transition-all"
-              placeholder="พิมพ์ข้อความ..."
+              placeholder={t(lang,"chat_placeholder")}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}

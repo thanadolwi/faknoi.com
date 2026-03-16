@@ -3,16 +3,22 @@
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AlertTriangle, Upload, ImageIcon, CheckCircle, X, Clock } from "lucide-react";
+import { useLang } from "@/lib/LangContext";
+import { t } from "@/lib/i18n";
 
 const MAX_SIZE = 1024 * 1024;
 
-const statusLabel: Record<string, { label: string; color: string; emoji: string }> = {
-  pending:   { label: "รอดำเนินการ", color: "bg-yellow-100 text-yellow-700", emoji: "⏳" },
-  reviewing: { label: "กำลังตรวจสอบ", color: "bg-blue-100 text-blue-700",   emoji: "🔍" },
-  resolved:  { label: "แก้ไขแล้ว",   color: "bg-green-100 text-green-700",  emoji: "✅" },
-};
+function getStatusLabel(lang: string, status: string) {
+  const map: Record<string, { labelKey: string; color: string; emoji: string }> = {
+    pending:   { labelKey: "rs_pending",   color: "bg-yellow-100 text-yellow-700", emoji: "⏳" },
+    reviewing: { labelKey: "rs_reviewing", color: "bg-blue-100 text-blue-700",     emoji: "🔍" },
+    resolved:  { labelKey: "rs_resolved",  color: "bg-green-100 text-green-700",   emoji: "✅" },
+  };
+  return map[status] || map.pending;
+}
 
 export default function ReportForm() {
+  const { lang } = useLang();
   const [role, setRole]       = useState<"shopper"|"buyer">("buyer");
   const [subject, setSubject] = useState("");
   const [body, setBody]       = useState("");
@@ -47,8 +53,8 @@ export default function ReportForm() {
     const f = e.target.files?.[0];
     setFileError("");
     if (!f) return;
-    if (f.size > MAX_SIZE) { setFileError("ไฟล์ใหญ่เกิน 1MB"); return; }
-    if (!f.type.startsWith("image/")) { setFileError("รองรับเฉพาะรูปภาพ"); return; }
+    if (f.size > MAX_SIZE) { setFileError(t(lang, "rf_file_too_big")); return; }
+    if (!f.type.startsWith("image/")) { setFileError(t(lang, "rf_file_type")); return; }
     setFile(f);
     setPreview(URL.createObjectURL(f));
   }
@@ -65,7 +71,7 @@ export default function ReportForm() {
       const ext = file.name.split(".").pop();
       const path = `${user.id}/${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("report-images").upload(path, file);
-      if (upErr) { setError("อัปโหลดรูปไม่สำเร็จ"); setLoading(false); return; }
+      if (upErr) { setError(t(lang, "rf_upload_fail")); setLoading(false); return; }
       const { data: { publicUrl } } = supabase.storage.from("report-images").getPublicUrl(path);
       imageUrl = publicUrl;
     }
@@ -78,7 +84,7 @@ export default function ReportForm() {
       image_url: imageUrl,
       report_status: "pending",
     });
-    if (insertErr) { setError("ส่งรายงานไม่สำเร็จ: " + insertErr.message); setLoading(false); return; }
+    if (insertErr) { setError(t(lang, "rf_send_fail") + ": " + insertErr.message); setLoading(false); return; }
     setSuccess(true);
     setLoading(false);
   }
@@ -91,69 +97,63 @@ export default function ReportForm() {
   return (
     <div className="max-w-lg mx-auto space-y-6 pb-10">
       <div>
-        <h1 className="text-xl font-black text-brand-navy">🚨 รายงานปัญหา</h1>
-        <p className="text-sm text-gray-400 mt-0.5">แจ้งปัญหาให้ทีมงาน FakNoi ทราบ</p>
+        <h1 className="text-xl font-black text-brand-navy">{t(lang, "rf_title")}</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{t(lang, "rf_subtitle")}</p>
       </div>
 
-      {/* Form */}
       {success ? (
         <div className="card text-center py-12">
           <CheckCircle className="w-14 h-14 text-green-500 mx-auto mb-4" />
-          <h2 className="text-xl font-black text-brand-navy mb-2">ส่งรายงานสำเร็จ!</h2>
-          <p className="text-sm text-gray-400 font-medium mb-6">ทีมงาน FakNoi จะตรวจสอบและติดต่อกลับโดยเร็ว</p>
-          <button onClick={resetForm} className="btn-primary text-sm py-2.5 px-6">รายงานปัญหาอื่น</button>
+          <h2 className="text-xl font-black text-brand-navy mb-2">{t(lang, "rf_success_title")}</h2>
+          <p className="text-sm text-gray-400 font-medium mb-6">{t(lang, "rf_success_body")}</p>
+          <button onClick={resetForm} className="btn-primary text-sm py-2.5 px-6">{t(lang, "rf_report_other")}</button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Role */}
           <div className="card space-y-3">
-            <p className="text-sm font-black text-brand-navy">คุณเป็น</p>
+            <p className="text-sm font-black text-brand-navy">{t(lang, "rf_you_are")}</p>
             <div className="grid grid-cols-2 gap-2">
               {([
-                { val: "buyer",   label: "👤 ผู้สั่ง (Buyer)" },
-                { val: "shopper", label: "🛵 ผู้รับหิ้ว (Shopper)" },
-              ] as const).map(({ val, label }) => (
+                { val: "buyer",   labelKey: "rf_buyer" },
+                { val: "shopper", labelKey: "rf_shopper" },
+              ] as const).map(({ val, labelKey }) => (
                 <button key={val} type="button" onClick={() => setRole(val)}
                   className={`py-3 rounded-2xl text-sm font-black border-2 transition-all duration-150 ${role === val ? "border-brand-blue text-white" : "border-gray-100 text-gray-500 bg-gray-50"}`}
                   style={role === val ? {background:"linear-gradient(135deg,#5478FF,#53CBF3)"} : {}}>
-                  {label}
+                  {t(lang, labelKey)}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Subject */}
           <div className="card space-y-2">
-            <label className="text-sm font-black text-brand-navy block">หัวข้อปัญหา <span className="text-red-400">*</span></label>
-            <input type="text" className="input-field" placeholder="เช่น ผู้รับหิ้วไม่ตอบแชท, ออเดอร์หาย..."
+            <label className="text-sm font-black text-brand-navy block">{t(lang, "rf_subject")} <span className="text-red-400">*</span></label>
+            <input type="text" className="input-field" placeholder={t(lang, "rf_subject_placeholder")}
               value={subject} onChange={(e) => setSubject(e.target.value)} required />
           </div>
 
-          {/* Body */}
           <div className="card space-y-2">
-            <label className="text-sm font-black text-brand-navy block">รายละเอียดปัญหา <span className="text-red-400">*</span></label>
-            <textarea className="input-field resize-none" rows={4} placeholder="อธิบายปัญหาที่พบให้ละเอียดที่สุด..."
+            <label className="text-sm font-black text-brand-navy block">{t(lang, "rf_body")} <span className="text-red-400">*</span></label>
+            <textarea className="input-field resize-none" rows={4} placeholder={t(lang, "rf_body_placeholder")}
               value={body} onChange={(e) => setBody(e.target.value)} required />
           </div>
 
-          {/* Contact */}
           <div className="card space-y-3">
-            <p className="text-sm font-black text-brand-navy">ข้อมูลติดต่อ</p>
+            <p className="text-sm font-black text-brand-navy">{t(lang, "rf_contact")}</p>
             <div>
-              <label className="text-xs font-bold text-gray-500 block mb-1.5">เบอร์โทรศัพท์ <span className="text-red-400">*</span></label>
+              <label className="text-xs font-bold text-gray-500 block mb-1.5">{t(lang, "rf_phone")} <span className="text-red-400">*</span></label>
               <input type="tel" className="input-field" placeholder="0812345678"
                 value={phone} onChange={(e) => setPhone(e.target.value)} required />
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500 block mb-1.5">Gmail <span className="text-red-400">*</span></label>
+              <label className="text-xs font-bold text-gray-500 block mb-1.5">{t(lang, "rf_gmail")} <span className="text-red-400">*</span></label>
               <input type="email" className="input-field" placeholder="yourname@gmail.com"
                 value={gmail} onChange={(e) => setGmail(e.target.value)} required />
             </div>
           </div>
 
-          {/* Image */}
           <div className="card space-y-2">
-            <label className="text-sm font-black text-brand-navy block">แนบรูปภาพ (ไม่บังคับ · ไม่เกิน 1MB)</label>
+            <label className="text-sm font-black text-brand-navy block">{t(lang, "rf_image")}</label>
             <div onClick={() => fileRef.current?.click()}
               className="border-2 border-dashed border-gray-200 rounded-2xl p-5 flex flex-col items-center gap-2 cursor-pointer hover:border-brand-blue/40 hover:bg-brand-blue/5 transition-colors">
               {preview ? (
@@ -165,7 +165,7 @@ export default function ReportForm() {
                   </button>
                 </div>
               ) : (
-                <><ImageIcon className="w-8 h-8 text-gray-300" /><p className="text-xs text-gray-400 font-medium">แตะเพื่อเลือกรูป</p></>
+                <><ImageIcon className="w-8 h-8 text-gray-300" /><p className="text-xs text-gray-400 font-medium">{t(lang, "rf_image_tap")}</p></>
               )}
             </div>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
@@ -179,15 +179,14 @@ export default function ReportForm() {
             className="btn-primary w-full py-3.5 text-base">
             {loading
               ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              : <><Upload className="w-4 h-4" /> ส่งรายงาน</>}
+              : <><Upload className="w-4 h-4" /> {t(lang, "rf_submit")}</>}
           </button>
         </form>
       )}
 
-      {/* History */}
       <div>
         <h2 className="font-black text-brand-navy mb-3 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-brand-blue" /> ประวัติการรายงาน
+          <Clock className="w-4 h-4 text-brand-blue" /> {t(lang, "report_history")}
         </h2>
         {loadingHistory ? (
           <div className="flex justify-center py-6">
@@ -195,17 +194,17 @@ export default function ReportForm() {
           </div>
         ) : history.length === 0 ? (
           <div className="card text-center py-8">
-            <p className="text-sm text-gray-400 font-medium">ยังไม่มีประวัติการรายงาน</p>
+            <p className="text-sm text-gray-400 font-medium">{t(lang, "report_no_history")}</p>
           </div>
         ) : (
           <div className="space-y-2.5">
             {history.map((r) => {
-              const s = statusLabel[r.report_status] || statusLabel.pending;
+              const s = getStatusLabel(lang, r.report_status);
               return (
                 <div key={r.id} className="card space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-black text-brand-navy text-sm">{r.subject}</p>
-                    <span className={`pill ${s.color} flex-shrink-0`}>{s.emoji} {s.label}</span>
+                    <span className={`pill ${s.color} flex-shrink-0`}>{s.emoji} {t(lang, s.labelKey)}</span>
                   </div>
                   <p className="text-xs text-gray-500 font-medium line-clamp-2">{r.body}</p>
                   <p className="text-xs text-gray-300 font-medium">

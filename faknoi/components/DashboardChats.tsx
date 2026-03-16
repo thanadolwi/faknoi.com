@@ -4,6 +4,8 @@ import { useState } from "react";
 import { MessageCircle, ArrowRight, ChevronDown, ShoppingBag, User } from "lucide-react";
 import Link from "next/link";
 import OrderChat from "./OrderChat";
+import { useLang } from "@/lib/LangContext";
+import { t } from "@/lib/i18n";
 
 interface ActiveOrder {
   id: string;
@@ -25,15 +27,17 @@ interface Props {
   currentUsername: string;
 }
 
-const statusLabel: Record<string, string> = {
-  pending: "รอรับออเดอร์", accepted: "รับแล้ว",
-  bought: "ซื้อแล้ว", delivering: "กำลังส่ง",
+const statusKeyMap: Record<string, string> = {
+  pending: "status_pending", accepted: "status_accepted",
+  bought: "status_bought", delivering: "status_delivering",
+  shopping: "status_shopping", completed: "status_completed",
 };
 
 export default function DashboardChats({ orders, currentUserId, currentUsername }: Props) {
   const [openId, setOpenId] = useState<string | null>(
     orders.length === 1 ? orders[0].id : null
   );
+  const { lang } = useLang();
 
   if (orders.length === 0) return null;
 
@@ -41,7 +45,7 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
     <div className="space-y-3">
       <h2 className="font-bold text-brand-navy flex items-center gap-2">
         <MessageCircle className="w-4 h-4 text-brand-blue" />
-        แชทออเดอร์ที่กำลังดำเนินการ
+        {t(lang,"chat_active")}
       </h2>
 
       {orders.map((order) => {
@@ -50,8 +54,8 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
 
         // context label
         const contextLabel = isShopper
-          ? `ผู้สั่ง: ${order.profiles?.username || "ไม่ระบุ"}`
-          : `ผู้รับหิ้ว: ${order.trips?.profiles?.username || "ไม่ระบุ"}`;
+          ? `${t(lang,"chat_buyer")}: ${order.profiles?.username || "-"}`
+          : `${t(lang,"chat_shopper_label")}: ${order.trips?.profiles?.username || "-"}`;
 
         return (
           <div key={order.id} className="card p-0 overflow-hidden">
@@ -82,7 +86,7 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
                     <span className="text-xs text-gray-400">{contextLabel}</span>
                     <span className="text-xs text-gray-300">·</span>
                     <span className="text-xs text-gray-400">
-                      {statusLabel[order.status] || order.status}
+                      {t(lang, statusKeyMap[order.status] || order.status) || order.status}
                     </span>
                   </div>
                 </div>
@@ -93,7 +97,7 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
                   onClick={(e) => e.stopPropagation()}
                   className="text-xs text-brand-blue hover:underline"
                 >
-                  ดูออเดอร์
+                  {t(lang,"chat_view_order")}
                 </Link>
                 <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
               </div>
