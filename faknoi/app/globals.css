@@ -84,3 +84,58 @@
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(84,120,255,0.25); border-radius: 99px; }
+
+/* ===== Dark Mode ===== */
+.dark body { @apply bg-gray-950 text-gray-100; }
+.dark .card { @apply bg-gray-900 border-gray-800; box-shadow: 0 2px 16px rgba(0,0,0,0.4); }
+.dark .card:hover { box-shadow: 0 8px 32px rgba(84,120,255,0.18); }
+.dark .input-field { @apply bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500; }
+.dark .input-field:focus { @apply border-brand-blue bg-gray-800; }
+.dark header { @apply bg-gray-950 border-gray-800; }
+.dark nav { @apply bg-gray-950 border-gray-800; }
+.dark .bg-white { @apply bg-gray-900; }
+.dark .bg-gray-50 { @apply bg-gray-800; }
+.dark .bg-gray-100 { @apply bg-gray-800; }
+.dark .text-gray-800 { @apply text-gray-100; }
+.dark .text-gray-700 { @apply text-gray-200; }
+.dark .text-gray-600 { @apply text-gray-300; }
+.dark .text-gray-500 { @apply text-gray-400; }
+.dark .border-gray-100 { @apply border-gray-800; }
+.dark .border-gray-200 { @apply border-gray-700; }
+.dark .min-h-screen { background-color: #030712; }
+
+/* ===== Universal Design: Visual Impairment ===== */
+.ud-visual body {
+  background: #000 !important;
+  color: #fff !important;
+  font-size: 120% !important;
+}
+.ud-visual .card {
+  background: #111 !important;
+  border: 2px solid #fff !important;
+  color: #fff !important;
+}
+.ud-visual .bg-white, .ud-visual .bg-gray-50, .ud-visual .bg-gray-100 {
+  background: #111 !important;
+}
+.ud-visual .text-gray-800, .ud-visual .text-gray-700,
+.ud-visual .text-gray-600, .ud-visual .text-gray-500 {
+  color: #fff !important;
+}
+.ud-visual header, .ud-visual nav {
+  background: #000 !important;
+  border-color: #fff !important;
+}
+.ud-visual .btn-primary {
+  background: #fff !important;
+  color: #000 !important;
+  box-shadow: none !important;
+}
+.ud-visual * { letter-spacing: 0.03em; }
+
+/* ===== Universal Design: Autism (reduce motion) ===== */
+.ud-autism *, .ud-autism *::before, .ud-autism *::after {
+  animation: none !important;
+  transition: none !important;
+}
+.ud-autism .card:hover { box-shadow: 0 2px 16px rgba(17,31,162,0.07) !important; }

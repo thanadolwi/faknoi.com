@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import {
@@ -8,25 +8,31 @@ import {
   Volume2, Brain, MoreHorizontal, Check, ChevronRight, LogOut
 } from "lucide-react";
 
-type Lang = "th" | "en";
+type Lang = "th" | "en" | "zh" | "hi";
 type Theme = "light" | "dark";
+
+const LANG_OPTIONS: { value: Lang; label: string; flag: string }[] = [
+  { value: "th", label: "ภาษาไทย",  flag: "🇹🇭" },
+  { value: "en", label: "English",   flag: "🇬🇧" },
+  { value: "zh", label: "中文",       flag: "🇨🇳" },
+  { value: "hi", label: "हिन्दी",     flag: "🇮🇳" },
+];
 
 const LABELS: Record<Lang, Record<string, string>> = {
   th: {
     title: "ตั้งค่าบัญชี",
     language: "ภาษา",
-    langTH: "ภาษาไทย",
-    langEN: "English",
     security: "ความปลอดภัย",
     changePassword: "เปลี่ยนรหัสผ่าน",
     currentPw: "รหัสผ่านปัจจุบัน",
     newPw: "รหัสผ่านใหม่",
     confirmPw: "ยืนยันรหัสผ่านใหม่",
     savePw: "บันทึกรหัสผ่าน",
+    saving: "กำลังบันทึก...",
     universal: "Universal Design",
     universalDesc: "ปรับแต่งการแสดงผลตามความต้องการของคุณ",
     visual: "ผู้พิการทางสายตา",
-    visualDesc: "ขนาดตัวอักษรใหญ่ขึ้น, contrast สูง",
+    visualDesc: "จอสีดำ contrast สูง + อ่านข้อความออกเสียง",
     hearing: "ผู้พิการทางการได้ยิน",
     hearingDesc: "แสดงคำบรรยายและการแจ้งเตือนด้วยภาพ",
     autism: "ออทิสติก",
@@ -41,22 +47,22 @@ const LABELS: Record<Lang, Record<string, string>> = {
     pwError: "รหัสผ่านไม่ตรงกัน",
     pwWrong: "รหัสผ่านปัจจุบันไม่ถูกต้อง",
     pwShort: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
+    ttsNote: "* เมื่อเปิดโหมดนี้ แตะที่ข้อความใดก็ได้เพื่อฟังเสียงอ่าน",
   },
   en: {
     title: "Account Settings",
     language: "Language",
-    langTH: "ภาษาไทย",
-    langEN: "English",
     security: "Security",
     changePassword: "Change Password",
     currentPw: "Current Password",
     newPw: "New Password",
     confirmPw: "Confirm New Password",
     savePw: "Save Password",
+    saving: "Saving...",
     universal: "Universal Design",
     universalDesc: "Customize display for your needs",
     visual: "Visual Impairment",
-    visualDesc: "Larger text, high contrast",
+    visualDesc: "Black screen high contrast + text-to-speech",
     hearing: "Hearing Impairment",
     hearingDesc: "Show captions and visual alerts",
     autism: "Autism",
@@ -71,6 +77,67 @@ const LABELS: Record<Lang, Record<string, string>> = {
     pwError: "Passwords do not match",
     pwWrong: "Current password is incorrect",
     pwShort: "Password must be at least 6 characters",
+    ttsNote: "* When enabled, tap any text to hear it read aloud",
+  },
+  zh: {
+    title: "账户设置",
+    language: "语言",
+    security: "安全",
+    changePassword: "更改密码",
+    currentPw: "当前密码",
+    newPw: "新密码",
+    confirmPw: "确认新密码",
+    savePw: "保存密码",
+    saving: "保存中...",
+    universal: "无障碍设计",
+    universalDesc: "根据您的需求自定义显示",
+    visual: "视觉障碍",
+    visualDesc: "黑色高对比度屏幕 + 文字转语音",
+    hearing: "听觉障碍",
+    hearingDesc: "显示字幕和视觉提醒",
+    autism: "自闭症",
+    autismDesc: "减少动画，简化界面",
+    other: "其他",
+    otherDesc: "其他自定义设置",
+    theme: "主题",
+    themeLight: "浅色",
+    themeDark: "深色",
+    logout: "退出登录",
+    pwSuccess: "密码更改成功",
+    pwError: "密码不匹配",
+    pwWrong: "当前密码不正确",
+    pwShort: "密码至少需要6个字符",
+    ttsNote: "* 启用后，点击任意文字即可听到朗读",
+  },
+  hi: {
+    title: "खाता सेटिंग",
+    language: "भाषा",
+    security: "सुरक्षा",
+    changePassword: "पासवर्ड बदलें",
+    currentPw: "वर्तमान पासवर्ड",
+    newPw: "नया पासवर्ड",
+    confirmPw: "नया पासवर्ड पुष्टि करें",
+    savePw: "पासवर्ड सहेजें",
+    saving: "सहेज रहे हैं...",
+    universal: "यूनिवर्सल डिज़ाइन",
+    universalDesc: "अपनी ज़रूरत के अनुसार डिस्प्ले कस्टमाइज़ करें",
+    visual: "दृष्टि बाधित",
+    visualDesc: "काली स्क्रीन उच्च कंट्रास्ट + टेक्स्ट-टू-स्पीच",
+    hearing: "श्रवण बाधित",
+    hearingDesc: "कैप्शन और विज़ुअल अलर्ट दिखाएं",
+    autism: "ऑटिज़्म",
+    autismDesc: "एनिमेशन कम करें, सरल UI",
+    other: "अन्य",
+    otherDesc: "अतिरिक्त कस्टमाइज़ेशन",
+    theme: "थीम",
+    themeLight: "लाइट",
+    themeDark: "डार्क",
+    logout: "लॉग आउट",
+    pwSuccess: "पासवर्ड सफलतापूर्वक बदला गया",
+    pwError: "पासवर्ड मेल नहीं खाते",
+    pwWrong: "वर्तमान पासवर्ड गलत है",
+    pwShort: "पासवर्ड कम से कम 6 अक्षर का होना चाहिए",
+    ttsNote: "* सक्षम होने पर, किसी भी टेक्स्ट पर टैप करें",
   },
 };
 
@@ -99,7 +166,7 @@ export default function AccountPage() {
   useEffect(() => {
     const savedLang = localStorage.getItem("faknoi_lang") as Lang | null;
     const savedTheme = localStorage.getItem("faknoi_theme") as Theme | null;
-    if (savedLang) setLang(savedLang);
+    if (savedLang && ["th","en","zh","hi"].includes(savedLang)) setLang(savedLang);
     if (savedTheme) setTheme(savedTheme);
     setUdVisual(localStorage.getItem("ud_visual") === "1");
     setUdHearing(localStorage.getItem("ud_hearing") === "1");
@@ -107,25 +174,48 @@ export default function AccountPage() {
     setUdOther(localStorage.getItem("ud_other") === "1");
   }, []);
 
-  // Apply theme
+  // Apply theme to <html>
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
     localStorage.setItem("faknoi_theme", theme);
   }, [theme]);
 
-  // Apply UD
+  // TTS click handler
+  const handleTTSClick = useCallback((e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const text = target.innerText || target.textContent || "";
+    if (!text.trim()) return;
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text.trim());
+      utter.lang = lang === "th" ? "th-TH" : lang === "zh" ? "zh-CN" : lang === "hi" ? "hi-IN" : "en-US";
+      window.speechSynthesis.speak(utter);
+    }
+  }, [lang]);
+
+  // Apply UD visual
   useEffect(() => {
     document.documentElement.classList.toggle("ud-visual", udVisual);
     localStorage.setItem("ud_visual", udVisual ? "1" : "0");
-  }, [udVisual]);
+    if (udVisual) {
+      document.addEventListener("click", handleTTSClick);
+    } else {
+      document.removeEventListener("click", handleTTSClick);
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    }
+    return () => document.removeEventListener("click", handleTTSClick);
+  }, [udVisual, handleTTSClick]);
+
   useEffect(() => {
     document.documentElement.classList.toggle("ud-hearing", udHearing);
     localStorage.setItem("ud_hearing", udHearing ? "1" : "0");
   }, [udHearing]);
+
   useEffect(() => {
     document.documentElement.classList.toggle("ud-autism", udAutism);
     localStorage.setItem("ud_autism", udAutism ? "1" : "0");
   }, [udAutism]);
+
   useEffect(() => {
     localStorage.setItem("ud_other", udOther ? "1" : "0");
   }, [udOther]);
@@ -143,7 +233,6 @@ export default function AccountPage() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.email) { setPwLoading(false); return; }
-    // Re-authenticate
     const { error: signInErr } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPw });
     if (signInErr) { setPwMsg({ type: "error", text: t.pwWrong }); setPwLoading(false); return; }
     const { error } = await supabase.auth.updateUser({ password: newPw });
@@ -164,10 +253,10 @@ export default function AccountPage() {
   }
 
   const udItems = [
-    { key: "visual", icon: Eye, val: udVisual, set: setUdVisual, label: t.visual, desc: t.visualDesc },
-    { key: "hearing", icon: Volume2, val: udHearing, set: setUdHearing, label: t.hearing, desc: t.hearingDesc },
-    { key: "autism", icon: Brain, val: udAutism, set: setUdAutism, label: t.autism, desc: t.autismDesc },
-    { key: "other", icon: MoreHorizontal, val: udOther, set: setUdOther, label: t.other, desc: t.otherDesc },
+    { key: "visual",  icon: Eye,           val: udVisual,  set: setUdVisual,  label: t.visual,  desc: t.visualDesc },
+    { key: "hearing", icon: Volume2,        val: udHearing, set: setUdHearing, label: t.hearing, desc: t.hearingDesc },
+    { key: "autism",  icon: Brain,          val: udAutism,  set: setUdAutism,  label: t.autism,  desc: t.autismDesc },
+    { key: "other",   icon: MoreHorizontal, val: udOther,   set: setUdOther,   label: t.other,   desc: t.otherDesc },
   ];
 
   return (
@@ -181,16 +270,16 @@ export default function AccountPage() {
             <Globe className="w-5 h-5 text-brand-blue" />
             <span className="font-black text-brand-navy">{t.language}</span>
           </div>
-          <div className="flex gap-2">
-            {(["th", "en"] as Lang[]).map((l) => (
-              <button key={l} onClick={() => handleLang(l)}
-                className={`flex-1 py-2.5 rounded-2xl font-black text-sm transition-all duration-200 ${
-                  lang === l
+          <div className="grid grid-cols-2 gap-2">
+            {LANG_OPTIONS.map(({ value, label, flag }) => (
+              <button key={value} onClick={() => handleLang(value)}
+                className={`flex items-center justify-center gap-2 py-2.5 rounded-2xl font-black text-sm transition-all duration-200 ${
+                  lang === value
                     ? "text-white shadow-blue-sm"
-                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
-                style={lang === l ? { background: "linear-gradient(135deg,#5478FF,#53CBF3)" } : {}}>
-                {l === "th" ? t.langTH : t.langEN}
+                style={lang === value ? { background: "linear-gradient(135deg,#5478FF,#53CBF3)" } : {}}>
+                <span className="text-base">{flag}</span> {label}
               </button>
             ))}
           </div>
@@ -205,20 +294,19 @@ export default function AccountPage() {
           <button onClick={() => setPwOpen(!pwOpen)}
             className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-gray-50 hover:bg-brand-blue/5 transition-colors">
             <span className="font-bold text-gray-700">{t.changePassword}</span>
-            <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${pwOpen ? "rotate-90" : ""}`} />
+            <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${pwOpen ? "rotate-90" : ""}`} />
           </button>
 
           {pwOpen && (
             <div className="mt-3 space-y-3">
               {[
                 { label: t.currentPw, val: currentPw, set: setCurrentPw, show: showCurrent, toggle: () => setShowCurrent(!showCurrent) },
-                { label: t.newPw, val: newPw, set: setNewPw, show: showNew, toggle: () => setShowNew(!showNew) },
-                { label: t.confirmPw, val: confirmPw, set: setConfirmPw, show: showConfirm, toggle: () => setShowConfirm(!showConfirm) },
+                { label: t.newPw,     val: newPw,      set: setNewPw,     show: showNew,     toggle: () => setShowNew(!showNew) },
+                { label: t.confirmPw, val: confirmPw,  set: setConfirmPw, show: showConfirm, toggle: () => setShowConfirm(!showConfirm) },
               ].map(({ label, val, set, show, toggle }) => (
                 <div key={label} className="relative">
                   <input type={show ? "text" : "password"} placeholder={label} value={val}
-                    onChange={(e) => set(e.target.value)}
-                    className="input-field pr-12" />
+                    onChange={(e) => set(e.target.value)} className="input-field pr-12" />
                   <button type="button" onClick={toggle}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-blue">
                     {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -231,7 +319,7 @@ export default function AccountPage() {
                 </p>
               )}
               <button onClick={handleChangePw} disabled={pwLoading} className="btn-primary w-full">
-                {pwLoading ? "กำลังบันทึก..." : t.savePw}
+                {pwLoading ? t.saving : t.savePw}
               </button>
             </div>
           )}
@@ -267,12 +355,17 @@ export default function AccountPage() {
               </button>
             ))}
           </div>
+          {udVisual && (
+            <p className="mt-3 text-xs text-brand-blue font-bold bg-brand-blue/5 rounded-2xl px-3 py-2">
+              {t.ttsNote}
+            </p>
+          )}
         </div>
 
         {/* Theme */}
         <div className="card">
           <div className="flex items-center gap-2 mb-3">
-            <Sun className="w-5 h-5 text-brand-blue" />
+            {theme === "dark" ? <Moon className="w-5 h-5 text-brand-blue" /> : <Sun className="w-5 h-5 text-brand-blue" />}
             <span className="font-black text-brand-navy">{t.theme}</span>
           </div>
           <div className="flex gap-2">
