@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Plus, Trash2, ShoppingBag } from "lucide-react";
@@ -14,6 +14,14 @@ const emptyItem = (): OrderItem => ({
 });
 
 export default function CreateOrderPage() {
+  return (
+    <Suspense>
+      <CreateOrderForm />
+    </Suspense>
+  );
+}
+
+function CreateOrderForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tripId = searchParams.get("trip_id") || "";
