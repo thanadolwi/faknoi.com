@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import I18nDashboard from "@/components/I18nDashboard";
 
 export const revalidate = 0;
@@ -41,9 +41,10 @@ export default async function DashboardPage() {
     ...(shopperActiveOrders || []).filter((o: any) => !(buyerActiveOrders || []).find((b: any) => b.id === o.id)),
   ];
 
-  // Insights — ดึง orders ทั้งหมด 7 วันล่าสุด
+  // Insights — ดึง orders ทุกคน 7 วันล่าสุด (bypass RLS ด้วย admin client)
+  const adminSupabase = createAdminClient();
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: recentOrders } = await supabase
+  const { data: recentOrders } = await adminSupabase
     .from("orders")
     .select("items, trips(origin_zone, destination_zone), created_at")
     .gte("created_at", since)
