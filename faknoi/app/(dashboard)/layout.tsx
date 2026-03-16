@@ -17,12 +17,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // load visual accessibility setting
     setUdVisual(localStorage.getItem("ud_visual") === "1");
 
-    // listen for changes (when user toggles in account page)
+    // storage event fires for OTHER tabs only — use custom event for same tab
     function onStorage(e: StorageEvent) {
       if (e.key === "ud_visual") setUdVisual(e.newValue === "1");
     }
+    function onUdChange(e: Event) {
+      setUdVisual((e as CustomEvent).detail === "1");
+    }
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener("ud_visual_change", onUdChange);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("ud_visual_change", onUdChange);
+    };
   }, []);
 
   useEffect(() => {

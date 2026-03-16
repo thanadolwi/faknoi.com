@@ -185,6 +185,8 @@ export default function AccountPage() {
   useEffect(() => {
     document.documentElement.classList.toggle("ud-visual", udVisual);
     localStorage.setItem("ud_visual", udVisual ? "1" : "0");
+    // notify layout (same tab)
+    window.dispatchEvent(new CustomEvent("ud_visual_change", { detail: udVisual ? "1" : "0" }));
   }, [udVisual]);
 
   useEffect(() => {

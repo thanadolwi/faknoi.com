@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Clock, TrendingUp, MapPin, ShoppingBag, Store, Flame } from "lucide-react";
+import { ArrowRight, Clock, TrendingUp, MapPin, ShoppingBag, Store, Flame, ChevronDown } from "lucide-react";
 import DashboardChats from "./DashboardChats";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
@@ -55,6 +56,7 @@ const UNI_COLORS = [
 
 export default function I18nDashboard({ username, trips, orders, allActiveOrders, currentUserId, insights }: Props) {
   const { lang } = useLang();
+  const [selectedUni, setSelectedUni] = useState<string>("all");
 
   const statusLabel: Record<string, { label: string; color: string; emoji: string }> = {
     pending:    { label: t(lang,"status_pending"),    color: "bg-yellow-100 text-yellow-700",  emoji: "⏳" },
@@ -199,38 +201,62 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
             </div>
           </div>
 
-          {/* Hot Zones by University */}
+          {/* University selector */}
           {insights.topZonesByUni.length > 0 && (
-            <div className="card p-4 space-y-4">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-brand-blue" />
-                <span className="text-xs font-black text-brand-navy">โซนฮิต</span>
-              </div>
-              {insights.topZonesByUni.map((uni, uniIdx) => {
-                const maxZone = uni.zones[0]?.[1] || 1;
-                const color = UNI_COLORS[uniIdx % UNI_COLORS.length];
-                return (
-                  <div key={uni.uniId} className="space-y-2">
-                    <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
-                      {uni.uniName}
-                    </span>
-                    {uni.zones.map(([zone, count]) => (
-                      <div key={zone} className="space-y-1 pl-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-gray-600 truncate max-w-[180px]">{zone}</span>
-                          <span className="text-xs font-black text-brand-navy">{count}</span>
-                        </div>
-                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full transition-all duration-700"
-                            style={{ width: `${(count / maxZone) * 100}%`, background: color.bar }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
+            <div className="relative">
+              <select
+                value={selectedUni}
+                onChange={(e) => setSelectedUni(e.target.value)}
+                className="w-full appearance-none input-field text-sm font-bold text-brand-navy pr-8">
+                <option value="all">🏫 ทุกมหาวิทยาลัย</option>
+                {insights.topZonesByUni.map((u) => (
+                  <option key={u.uniId} value={u.uniId}>{u.uniName}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           )}
+
+          {/* Hot Zones */}
+          {(() => {
+            const filtered = selectedUni === "all"
+              ? insights.topZonesByUni
+              : insights.topZonesByUni.filter((u) => u.uniId === selectedUni);
+            if (!filtered.length) return null;
+            return (
+              <div className="card p-4 space-y-4">
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-brand-blue" />
+                  <span className="text-xs font-black text-brand-navy">โซนฮิต</span>
+                </div>
+                {filtered.map((uni, uniIdx) => {
+                  const maxZone = uni.zones[0]?.[1] || 1;
+                  const color = UNI_COLORS[uniIdx % UNI_COLORS.length];
+                  return (
+                    <div key={uni.uniId} className="space-y-2">
+                      {selectedUni === "all" && (
+                        <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
+                          {uni.uniName}
+                        </span>
+                      )}
+                      {uni.zones.map(([zone, count]) => (
+                        <div key={zone} className="space-y-1 pl-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-gray-600 truncate max-w-[180px]">{zone}</span>
+                            <span className="text-xs font-black text-brand-navy">{count}</span>
+                          </div>
+                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-700"
+                              style={{ width: `${(count / maxZone) * 100}%`, background: color.bar }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* Peak Hours */}
           {insights.topHours.length > 0 && (
@@ -255,43 +281,51 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
           )}
 
           {/* Top Items by University */}
-          {insights.topItemsByUni.length > 0 && (
-            <div className="card p-4 space-y-4">
-              <div className="flex items-center gap-1.5">
-                <ShoppingBag className="w-3.5 h-3.5 text-brand-blue" />
-                <span className="text-xs font-black text-brand-navy">เมนูฮิต</span>
-                <span className="ml-auto text-xs text-gray-400">7 วันล่าสุด</span>
-              </div>
-              {insights.topItemsByUni.map((uni, uniIdx) => {
-                const maxItem = uni.items[0]?.[1] || 1;
-                const color = UNI_COLORS[uniIdx % UNI_COLORS.length];
-                return (
-                  <div key={uni.uniId} className="space-y-2">
-                    <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
-                      {uni.uniName}
-                    </span>
-                    {uni.items.map(([item, count], i) => (
-                      <div key={item} className="flex items-center gap-3 pl-2">
-                        <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 ${
-                          i === 0 ? "bg-brand-yellow text-brand-navy" : "bg-gray-100 text-gray-500"
-                        }`}>{i + 1}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-0.5">
-                            <span className="text-xs font-bold text-brand-navy truncate">{capitalize(item)}</span>
-                            <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{count}×</span>
-                          </div>
-                          <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-700"
-                              style={{ width: `${(count / maxItem) * 100}%`, background: color.bar }} />
+          {(() => {
+            const filtered = selectedUni === "all"
+              ? insights.topItemsByUni
+              : insights.topItemsByUni.filter((u) => u.uniId === selectedUni);
+            if (!filtered.length) return null;
+            return (
+              <div className="card p-4 space-y-4">
+                <div className="flex items-center gap-1.5">
+                  <ShoppingBag className="w-3.5 h-3.5 text-brand-blue" />
+                  <span className="text-xs font-black text-brand-navy">เมนูฮิต</span>
+                  <span className="ml-auto text-xs text-gray-400">7 วันล่าสุด</span>
+                </div>
+                {filtered.map((uni, uniIdx) => {
+                  const maxItem = uni.items[0]?.[1] || 1;
+                  const color = UNI_COLORS[uniIdx % UNI_COLORS.length];
+                  return (
+                    <div key={uni.uniId} className="space-y-2">
+                      {selectedUni === "all" && (
+                        <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
+                          {uni.uniName}
+                        </span>
+                      )}
+                      {uni.items.map(([item, count], i) => (
+                        <div key={item} className="flex items-center gap-3 pl-2">
+                          <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 ${
+                            i === 0 ? "bg-brand-yellow text-brand-navy" : "bg-gray-100 text-gray-500"
+                          }`}>{i + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-xs font-bold text-brand-navy truncate">{capitalize(item)}</span>
+                              <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{count}×</span>
+                            </div>
+                            <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all duration-700"
+                                style={{ width: `${(count / maxItem) * 100}%`, background: color.bar }} />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* Top Shops */}
           {insights.topShops.length > 0 && (
