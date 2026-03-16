@@ -11,9 +11,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const username = user.user_metadata?.username || user.email?.split("@")[0] || "ผู้ใช้";
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F0F2FF]">
       <Navbar username={username} />
-      <main className="max-w-5xl mx-auto px-4 py-6 pb-24 md:pb-6">
+      <main className="max-w-5xl mx-auto px-4 py-6 pb-28 md:pb-8">
         {children}
       </main>
     </div>
