@@ -253,7 +253,23 @@ export default function OrderStatusActions({
 
       {/* Shopper: complete */}
       {isShopper && currentStatus === "delivering" && (
-        <button onClick={() => updateOrder({ status: "completed" })} disabled={loading}
+        <button onClick={async () => {
+          setLoading(true);
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          // complete order
+          await supabase.from("orders").update({ status: "completed", updated_at: new Date().toISOString() }).eq("id", orderId);
+          // บันทึก wallet transaction ถ้ามี final_price
+          if (finalPrice && user) {
+            await supabase.from("wallet_transactions").insert({
+              shopper_id: user.id,
+              order_id: orderId,
+              actual_price: finalPrice,
+            });
+          }
+          router.refresh();
+          setLoading(false);
+        }} disabled={loading}
           className="btn-primary w-full flex items-center justify-center gap-2 text-sm">
           <CheckCircle className="w-4 h-4" />ส่งสำเร็จ
         </button>

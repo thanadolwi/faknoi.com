@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { ShoppingBag, LayoutDashboard, MapPin, ClipboardList, LogOut } from "lucide-react";
+import { ShoppingBag, LayoutDashboard, MapPin, ClipboardList, Wallet, AlertTriangle, LogOut } from "lucide-react";
 import clsx from "clsx";
 
 const navItems = [
   { href: "/dashboard", label: "หน้าหลัก", icon: LayoutDashboard, emoji: "🏠" },
   { href: "/trips",     label: "ทริป",      icon: MapPin,           emoji: "🛵" },
   { href: "/orders",    label: "ออเดอร์",   icon: ClipboardList,    emoji: "📋" },
+  { href: "/wallet",    label: "ถุงเงิน",   icon: Wallet,           emoji: "💰" },
+  { href: "/report",    label: "รายงาน",    icon: AlertTriangle,    emoji: "🚨" },
 ];
 
 export default function Navbar({ username }: { username: string }) {
