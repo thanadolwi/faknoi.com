@@ -53,55 +53,58 @@ export default function I18nOrderDetail({
 
       {/* Progress Steps */}
       {order.status !== "cancelled" && (
-        <div className="card py-5 px-4">
-          <div className="relative mb-5">
-            <div className="absolute top-3.5 left-0 right-0 h-1.5 bg-gray-100 rounded-full" />
+        <div className="card py-5 px-4 overflow-hidden">
+          <div className="relative flex items-start justify-between">
+            {/* connecting line */}
+            <div className="absolute top-3.5 left-0 right-0 h-1.5 bg-gray-100 rounded-full mx-3.5" />
+            {/* filled line */}
             <div
-              className="absolute top-3.5 left-0 h-1.5 bg-gradient-to-r from-brand-blue to-brand-cyan rounded-full transition-all duration-700 ease-in-out"
-              style={{ width: `${(currentStepIndex / (statusSteps.length - 1)) * 100}%` }}
+              className="absolute top-3.5 left-3.5 h-1.5 bg-gradient-to-r from-brand-blue to-brand-cyan rounded-full transition-all duration-700 ease-in-out"
+              style={{
+                width: currentStepIndex === 0
+                  ? "0%"
+                  : `calc(${(currentStepIndex / (statusSteps.length - 1)) * 100}% - 7px)`,
+              }}
             />
+            {/* animated pulse on next segment */}
             {currentStepIndex < statusSteps.length - 1 && (
               <div
                 className="absolute top-3.5 h-1.5 rounded-full overflow-hidden"
                 style={{
-                  left: `${(currentStepIndex / (statusSteps.length - 1)) * 100}%`,
-                  width: `${(1 / (statusSteps.length - 1)) * 100}%`,
+                  left: `calc(${(currentStepIndex / (statusSteps.length - 1)) * 100}% + 3.5px)`,
+                  width: `calc(${(1 / (statusSteps.length - 1)) * 100}% - 7px)`,
                 }}
               >
-                <div className="h-full w-full bg-gradient-to-r from-brand-cyan/40 to-brand-blue/40 animate-pulse" />
+                <div className="h-full w-full bg-gradient-to-r from-brand-cyan/50 to-transparent animate-pulse" />
               </div>
             )}
-            <div className="relative flex justify-between">
-              {statusSteps.map((step, i) => {
-                const done = i <= currentStepIndex;
-                const active = i === currentStepIndex;
-                return (
-                  <div key={step} className="flex flex-col items-center gap-2">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold z-10 transition-all duration-500 ${
-                      done ? active ? "bg-brand-blue text-white ring-4 ring-brand-blue/20 scale-110" : "bg-brand-blue text-white"
-                           : "bg-white border-2 border-gray-200 text-gray-400"
-                    }`}>
-                      {done && !active ? (
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : <span>{i + 1}</span>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="flex justify-between">
+
             {statusSteps.map((step, i) => {
-              const cfg = statusColorMap[step];
               const done = i <= currentStepIndex;
               const active = i === currentStepIndex;
+              const cfg = statusColorMap[step];
               return (
-                <div key={step} className="flex-1 flex flex-col items-center">
-                  <span className={`text-center leading-tight text-[9px] font-medium transition-colors duration-300 ${
+                <div key={step} className="relative flex flex-col items-center gap-1.5 z-10" style={{ flex: 1 }}>
+                  {/* dot */}
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500 ${
+                    active
+                      ? "bg-brand-blue text-white ring-4 ring-brand-blue/20 scale-110 shadow-md"
+                      : done
+                      ? "bg-brand-blue text-white"
+                      : "bg-white border-2 border-gray-200 text-gray-400"
+                  }`}>
+                    {done && !active ? (
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <span>{i + 1}</span>
+                    )}
+                  </div>
+                  {/* label */}
+                  <span className={`text-center leading-tight text-[9px] font-semibold transition-colors duration-300 px-0.5 ${
                     active ? "text-brand-blue" : done ? "text-brand-navy" : "text-gray-400"
-                  }`} style={{ maxWidth: 48 }}>
+                  }`} style={{ maxWidth: 44, wordBreak: "keep-all" }}>
                     {t(lang, cfg.labelKey)}
                   </span>
                 </div>
