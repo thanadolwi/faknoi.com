@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import I18nTrips from "@/components/I18nTrips";
 
-export const revalidate = 30;
+export const revalidate = 0;
 
 export default async function TripsPage({
   searchParams,
@@ -21,7 +21,10 @@ export default async function TripsPage({
   if (uni) query = query.eq("university_id", uni);
   if (zone) query = query.or(`origin_zone.eq.${zone},destination_zone.eq.${zone}`);
 
-  const { data: trips } = await query;
+  const { data: allTrips } = await query;
 
-  return <I18nTrips trips={trips || []} zone={zone} />;
+  // กรองทริปที่เต็มแล้วออก (current_orders >= max_orders)
+  const trips = (allTrips || []).filter((trip) => trip.current_orders < trip.max_orders);
+
+  return <I18nTrips trips={trips} zone={zone} />;
 }
