@@ -12,10 +12,16 @@ interface ZoneByUni {
   zones: [string, number][];
 }
 
+interface ItemByUni {
+  uniId: string;
+  uniName: string;
+  items: [string, number][];
+}
+
 interface Insights {
   topZonesByUni: ZoneByUni[];
+  topItemsByUni: ItemByUni[];
   topHours: { hour: number; count: number }[];
-  topItems: [string, number][];
   topShops: [string, number][];
   totalRecent: number;
 }
@@ -39,6 +45,14 @@ function HourLabel(h: number) {
   return `${h12}:00 ${ampm}`;
 }
 
+const UNI_COLORS = [
+  { badge: "bg-brand-blue/10 text-brand-blue", bar: "linear-gradient(90deg,#5478FF,#53CBF3)" },
+  { badge: "bg-brand-cyan/10 text-brand-navy", bar: "linear-gradient(90deg,#53CBF3,#FFDE42)" },
+  { badge: "bg-yellow-100 text-yellow-700",    bar: "linear-gradient(90deg,#FFDE42,#FFB800)" },
+  { badge: "bg-purple-100 text-purple-700",    bar: "linear-gradient(90deg,#a78bfa,#818cf8)" },
+  { badge: "bg-green-100 text-green-700",      bar: "linear-gradient(90deg,#34d399,#10b981)" },
+];
+
 export default function I18nDashboard({ username, trips, orders, allActiveOrders, currentUserId, insights }: Props) {
   const { lang } = useLang();
 
@@ -51,8 +65,6 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
     completed:  { label: t(lang,"status_completed"),  color: "bg-green-100 text-green-700",    emoji: "🎉" },
     cancelled:  { label: t(lang,"status_cancelled"),  color: "bg-red-100 text-red-700",        emoji: "❌" },
   };
-
-  const maxItem = insights.topItems[0]?.[1] || 1;
 
   return (
     <div className="space-y-5">
@@ -174,10 +186,9 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
         )}
       </div>
 
-      {/* Insights — ท้ายสุด */}
+      {/* Insights */}
       {insights.totalRecent > 0 && (
         <div className="space-y-3">
-          {/* Header */}
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-xl hero-grad flex items-center justify-center flex-shrink-0">
               <TrendingUp className="w-3.5 h-3.5 text-white" />
@@ -197,33 +208,21 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
               </div>
               {insights.topZonesByUni.map((uni, uniIdx) => {
                 const maxZone = uni.zones[0]?.[1] || 1;
+                const color = UNI_COLORS[uniIdx % UNI_COLORS.length];
                 return (
                   <div key={uni.uniId} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${
-                        uniIdx === 0 ? "bg-brand-blue/10 text-brand-blue" :
-                        uniIdx === 1 ? "bg-brand-cyan/10 text-brand-navy" :
-                        "bg-gray-100 text-gray-500"
-                      }`}>{uni.uniName}</span>
-                    </div>
-                    {uni.zones.map(([zone, count], i) => (
+                    <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
+                      {uni.uniName}
+                    </span>
+                    {uni.zones.map(([zone, count]) => (
                       <div key={zone} className="space-y-1 pl-2">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-gray-600 truncate max-w-[180px]">{zone}</span>
                           <span className="text-xs font-black text-brand-navy">{count}</span>
                         </div>
                         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-700"
-                            style={{
-                              width: `${(count / maxZone) * 100}%`,
-                              background: i === 0
-                                ? "linear-gradient(90deg,#5478FF,#53CBF3)"
-                                : i === 1
-                                ? "linear-gradient(90deg,#53CBF3,#FFDE42)"
-                                : "linear-gradient(90deg,#FFDE42,#FFB800)",
-                            }}
-                          />
+                          <div className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${(count / maxZone) * 100}%`, background: color.bar }} />
                         </div>
                       </div>
                     ))}
@@ -244,9 +243,7 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
                 <div key={hour} className="flex items-center gap-2">
                   <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 ${
                     i === 0 ? "bg-brand-blue text-white" : i === 1 ? "bg-brand-cyan/20 text-brand-navy" : "bg-gray-100 text-gray-500"
-                  }`}>
-                    {hour}
-                  </div>
+                  }`}>{hour}</div>
                   <div className="flex-1">
                     <p className="text-xs font-bold text-brand-navy">{HourLabel(hour)}</p>
                     <p className="text-xs text-gray-400">{count} ออเดอร์</p>
@@ -257,33 +254,42 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
             </div>
           )}
 
-          {/* Top Items */}
-          {insights.topItems.length > 0 && (
-            <div className="card p-4 space-y-3">
+          {/* Top Items by University */}
+          {insights.topItemsByUni.length > 0 && (
+            <div className="card p-4 space-y-4">
               <div className="flex items-center gap-1.5">
                 <ShoppingBag className="w-3.5 h-3.5 text-brand-blue" />
                 <span className="text-xs font-black text-brand-navy">เมนูฮิต</span>
                 <span className="ml-auto text-xs text-gray-400">7 วันล่าสุด</span>
               </div>
-              <div className="space-y-2">
-                {insights.topItems.map(([item, count], i) => (
-                  <div key={item} className="flex items-center gap-3">
-                    <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 ${
-                      i === 0 ? "bg-brand-yellow text-brand-navy" : "bg-gray-100 text-gray-500"
-                    }`}>{i + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-xs font-bold text-brand-navy truncate">{capitalize(item)}</span>
-                        <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{count}×</span>
+              {insights.topItemsByUni.map((uni, uniIdx) => {
+                const maxItem = uni.items[0]?.[1] || 1;
+                const color = UNI_COLORS[uniIdx % UNI_COLORS.length];
+                return (
+                  <div key={uni.uniId} className="space-y-2">
+                    <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
+                      {uni.uniName}
+                    </span>
+                    {uni.items.map(([item, count], i) => (
+                      <div key={item} className="flex items-center gap-3 pl-2">
+                        <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 ${
+                          i === 0 ? "bg-brand-yellow text-brand-navy" : "bg-gray-100 text-gray-500"
+                        }`}>{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-bold text-brand-navy truncate">{capitalize(item)}</span>
+                            <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{count}×</span>
+                          </div>
+                          <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-700"
+                              style={{ width: `${(count / maxItem) * 100}%`, background: color.bar }} />
+                          </div>
+                        </div>
                       </div>
-                      <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-gradient-to-r from-brand-blue to-brand-cyan"
-                          style={{ width: `${(count / maxItem) * 100}%` }} />
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           )}
 
@@ -298,11 +304,9 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
               <div className="flex flex-wrap gap-2">
                 {insights.topShops.map(([shop, count], i) => (
                   <div key={shop} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold border ${
-                    i === 0
-                      ? "bg-brand-blue/10 border-brand-blue/20 text-brand-blue"
-                      : i === 1
-                      ? "bg-brand-cyan/10 border-brand-cyan/20 text-brand-navy"
-                      : "bg-gray-50 border-gray-100 text-gray-600"
+                    i === 0 ? "bg-brand-blue/10 border-brand-blue/20 text-brand-blue"
+                    : i === 1 ? "bg-brand-cyan/10 border-brand-cyan/20 text-brand-navy"
+                    : "bg-gray-50 border-gray-100 text-gray-600"
                   }`}>
                     {i === 0 && <Flame className="w-3 h-3 text-orange-400" />}
                     {capitalize(shop)}
