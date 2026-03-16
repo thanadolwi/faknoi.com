@@ -6,23 +6,23 @@ import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ShoppingBag, LayoutDashboard, MapPin, ClipboardList, Wallet, AlertTriangle, LogOut, User, Settings } from "lucide-react";
 import clsx from "clsx";
-
-const navItems = [
-  { href: "/dashboard", label: "หน้าหลัก", icon: LayoutDashboard, emoji: "🏠" },
-  { href: "/trips",     label: "ทริป",      icon: MapPin,           emoji: "🛵" },
-  { href: "/orders",    label: "ออเดอร์",   icon: ClipboardList,    emoji: "📋" },
-  { href: "/wallet",    label: "ถุงเงิน",   icon: Wallet,           emoji: "💰" },
-  { href: "/report",    label: "รายงาน",    icon: AlertTriangle,    emoji: "🚨" },
-  { href: "/account",   label: "บัญชี",     icon: User,             emoji: "👤" },
-];
-
-const bottomNavItems = navItems.slice(0, 5); // ไม่รวม account ใน bottom nav
+import { useLang } from "@/lib/LangContext";
+import { t } from "@/lib/i18n";
 
 export default function Navbar({ username }: { username: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
+  const { lang } = useLang();
+
+  const navItems = [
+    { href: "/dashboard", label: t(lang, "nav_home"),   icon: LayoutDashboard, emoji: "🏠" },
+    { href: "/trips",     label: t(lang, "nav_trips"),  icon: MapPin,           emoji: "🛵" },
+    { href: "/orders",    label: t(lang, "nav_orders"), icon: ClipboardList,    emoji: "📋" },
+    { href: "/wallet",    label: t(lang, "nav_wallet"), icon: Wallet,           emoji: "💰" },
+    { href: "/report",    label: t(lang, "nav_report"), icon: AlertTriangle,    emoji: "🚨" },
+  ];
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -82,17 +82,17 @@ export default function Navbar({ username }: { username: string }) {
             {open && (
               <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-3xl border border-gray-100 shadow-blue-md overflow-hidden z-50 animate-pop">
                 <div className="px-4 py-3 border-b border-gray-50">
-                  <p className="text-xs text-gray-400 font-medium">เข้าสู่ระบบในฐานะ</p>
+                  <p className="text-xs text-gray-400 font-medium">{t(lang, "nav_logged_as")}</p>
                   <p className="font-black text-brand-navy">{username}</p>
                 </div>
                 <div className="p-2">
                   <Link href="/account" onClick={() => setOpen(false)}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-bold text-gray-700 hover:bg-brand-blue/5 hover:text-brand-navy transition-colors">
-                    <Settings className="w-4 h-4 text-brand-blue" /> ตั้งค่าบัญชี
+                    <Settings className="w-4 h-4 text-brand-blue" /> {t(lang, "nav_settings")}
                   </Link>
                   <button onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-colors">
-                    <LogOut className="w-4 h-4" /> ออกจากระบบ
+                    <LogOut className="w-4 h-4" /> {t(lang, "nav_logout")}
                   </button>
                 </div>
               </div>
@@ -125,7 +125,7 @@ export default function Navbar({ username }: { username: string }) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100"
         style={{paddingBottom:"env(safe-area-inset-bottom)", boxShadow:"0 -4px 20px rgba(84,120,255,0.08)"}}>
         <div className="flex px-1 py-1">
-          {bottomNavItems.map(({ href, label, emoji }) => {
+          {navItems.map(({ href, label, emoji }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link key={href} href={href} className="flex-1 flex flex-col items-center gap-0.5 py-2 rounded-2xl transition-all duration-200">
