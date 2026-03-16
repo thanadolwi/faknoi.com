@@ -22,8 +22,15 @@ function ReportCard({ report }: { report: any }) {
   async function updateStatus(newStatus: string) {
     setSaving(true);
     const supabase = createClient();
-    await supabase.from("reports").update({ report_status: newStatus }).eq("id", report.id);
-    setStatus(newStatus);
+    const { error } = await supabase
+      .from("reports")
+      .update({ report_status: newStatus })
+      .eq("id", report.id);
+    if (error) {
+      alert("อัปเดตไม่สำเร็จ: " + error.message);
+    } else {
+      setStatus(newStatus);
+    }
     setSaving(false);
   }
 
