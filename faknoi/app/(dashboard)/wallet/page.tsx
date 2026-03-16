@@ -1,31 +1,75 @@
-import { createClient } from "@/lib/supabase/server";
-import { TrendingUp, AlertCircle } from "lucide-react";
+"use client";
 
-export default async function WalletPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+import { useState, useRef, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { TrendingUp, AlertCircle, Upload, ImageIcon, X, CheckCircle } from "lucide-react";
 
-  // หา trip ids ที่ตัวเองเป็น shopper
-  const { data: myTrips } = await supabase
-    .from("trips")
-    .select("id")
-    .eq("shopper_id", user?.id);
+const MAX_SIZE = 500 * 1024;
 
-  const tripIds = (myTrips || []).map((t: any) => t.id);
+export default function WalletPage() {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [fileError, setFileError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  // ดึง completed orders ที่มี final_price
-  const { data: orders } = tripIds.length > 0
-    ? await supabase
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: myTrips } = await supabase.from("trips").select("id").eq("shopper_id", user?.id);
+      const tripIds = (myTrips || []).map((t: any) => t.id);
+      if (!tripIds.length) { setLoading(false); return; }
+      const { data } = await supabase
         .from("orders")
         .select("id, final_price, created_at, trips(origin_zone, destination_zone)")
         .in("trip_id", tripIds)
         .eq("status", "completed")
         .not("final_price", "is", null)
-        .order("created_at", { ascending: false })
-    : { data: [] };
+        .order("created_at", { ascending: false });
+      setOrders(data || []);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
-  const totalActual = (orders || []).reduce((s, o: any) => s + Number(o.final_price), 0);
+  const totalActual = orders.reduce((s, o) => s + Number(o.final_price), 0);
   const totalFee    = Math.round(totalActual * 0.05 * 100) / 100;
+  const hasFee      = totalFee > 0;
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    setFileError("");
+    if (!f) return;
+    if (f.size > MAX_SIZE) { setFileError("ไฟล์ใหญ่เกิน 500KB"); return; }
+    if (!f.type.startsWith("image/")) { setFileError("รองรับเฉพาะรูปภาพ"); return; }
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  }
+
+  async function handleUpload() {
+    if (!file) return;
+    setUploading(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const ext = file.name.split(".").pop();
+    const path = `${user!.id}/fee-slip-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("payment-slips").upload(path, file, { upsert: true });
+    if (error) { setFileError("อัปโหลดไม่สำเร็จ"); setUploading(false); return; }
+    setUploaded(true);
+    setUploading(false);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <span className="w-6 h-6 border-2 border-brand-blue/30 border-t-brand-blue rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-lg mx-auto space-y-5 pb-10">
@@ -39,7 +83,7 @@ export default async function WalletPage() {
         <div className="card text-center py-5">
           <p className="text-xs text-gray-400 font-medium mb-1">ยอดรวมราคาสุทธิ</p>
           <p className="text-2xl font-black text-brand-navy">฿{totalActual.toFixed(2)}</p>
-          <p className="text-xs text-gray-300 mt-1">{(orders || []).length} ออเดอร์</p>
+          <p className="text-xs text-gray-300 mt-1">{orders.length} ออเดอร์</p>
         </div>
         <div className="card text-center py-5" style={{background:"linear-gradient(135deg,#5478FF,#53CBF3)"}}>
           <p className="text-xs text-white/70 font-medium mb-1">ค้างชำระ FakNoi (5%)</p>
@@ -47,17 +91,79 @@ export default async function WalletPage() {
         </div>
       </div>
 
-      {/* Payment info */}
-      <div className="card border-2 border-brand-yellow/40 bg-brand-yellow/5">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-black text-brand-navy text-sm mb-1">ช่องทางชำระค่าบริการ FakNoi</p>
-            <p className="text-sm text-gray-600 font-medium">PromptPay: <span className="font-black text-brand-navy">0812345678</span></p>
-            <p className="text-xs text-gray-400 mt-1">ชื่อบัญชี: FakNoi Platform · โอนทุกสิ้นเดือน</p>
+      {/* Payment info + slip upload — แสดงเฉพาะเมื่อมียอดค้างชำระ */}
+      {hasFee && (
+        <>
+          <div className="card border-2 border-brand-yellow/40 bg-brand-yellow/5">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-black text-brand-navy text-sm mb-1">ช่องทางชำระค่าบริการ FakNoi</p>
+                <p className="text-sm text-gray-600 font-medium">
+                  PromptPay: <span className="font-black text-brand-navy">0812345678</span>
+                </p>
+                <p className="text-xs text-gray-400 mt-1">ชื่อบัญชี: FakNoi Platform · โอนทุกสิ้นเดือน</p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+
+          {/* Slip upload */}
+          <div className="card space-y-3">
+            <p className="font-black text-brand-navy text-sm">
+              📎 แนบสลิปการโอนเงิน
+            </p>
+            <p className="text-xs text-gray-400 font-medium">ขนาดไม่เกิน 500KB</p>
+
+            {uploaded ? (
+              <div className="flex items-center gap-3 bg-green-50 border border-green-100 rounded-2xl px-4 py-3">
+                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <p className="text-sm font-bold text-green-700">ส่งสลิปเรียบร้อยแล้ว ขอบคุณ! 🙏</p>
+              </div>
+            ) : (
+              <>
+                <div
+                  onClick={() => fileRef.current?.click()}
+                  className="border-2 border-dashed border-gray-200 rounded-2xl p-5 flex flex-col items-center gap-2 cursor-pointer hover:border-brand-blue/40 hover:bg-brand-blue/5 transition-colors"
+                >
+                  {preview ? (
+                    <div className="relative">
+                      <img src={preview} alt="slip" className="max-h-40 rounded-xl object-contain" />
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setFile(null); setPreview(null); }}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-8 h-8 text-gray-300" />
+                      <p className="text-xs text-gray-400 text-center font-medium">แตะเพื่อเลือกรูปสลิป</p>
+                    </>
+                  )}
+                </div>
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+
+                {fileError && (
+                  <p className="text-xs text-red-500 font-medium">{fileError}</p>
+                )}
+
+                <button
+                  onClick={handleUpload}
+                  disabled={!file || uploading}
+                  className="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2"
+                >
+                  {uploading
+                    ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    : <Upload className="w-4 h-4" />}
+                  {uploading ? "กำลังอัปโหลด..." : "ส่งสลิป"}
+                </button>
+              </>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Order list */}
       <div>
@@ -65,7 +171,7 @@ export default async function WalletPage() {
           <TrendingUp className="w-4 h-4 text-brand-blue" />
           รายการออเดอร์ที่ส่งสำเร็จ
         </h2>
-        {orders && orders.length > 0 ? (
+        {orders.length > 0 ? (
           <div className="space-y-2.5">
             {orders.map((o: any) => (
               <div key={o.id} className="card flex items-center justify-between">
