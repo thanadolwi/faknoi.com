@@ -127,7 +127,7 @@ export default function CreateTripPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Outstanding balance warning */}
-        {outstanding !== null && outstanding > 1000 && (
+        {outstanding !== null && outstanding > 300 && (
           <div className="card border-2 border-red-200 bg-red-50 space-y-3">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -242,7 +242,7 @@ export default function CreateTripPage() {
 
         {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">{error}</div>}
 
-        <button type="submit" disabled={loading || !selectedUniId || (outstanding !== null && outstanding > 1000)} className="btn-primary w-full flex items-center justify-center gap-2 py-3">
+        <button type="submit" disabled={loading || !selectedUniId || (outstanding !== null && outstanding > 300)} className="btn-primary w-full flex items-center justify-center gap-2 py-3">
           {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus className="w-4 h-4" />}
           {loading ? t(lang, "ct_creating") : t(lang, "ct_open_trip")}
         </button>
