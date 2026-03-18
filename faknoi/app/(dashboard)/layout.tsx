@@ -9,20 +9,43 @@ import { useLang } from "@/lib/LangContext";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { lang } = useLang();
-  const [udVisual, setUdVisual] = useState(false);
+  const [ttsActive, setTtsActive] = useState(false);
   const [username, setUsername] = useState("ผู้ใช้");
   const router = useRouter();
 
   useEffect(() => {
-    // load visual accessibility setting
-    setUdVisual(localStorage.getItem("ud_visual") === "1");
+    // Apply all UD classes from localStorage on mount
+    const udVisual = localStorage.getItem("ud_visual") === "1";
+    const udHearing = localStorage.getItem("ud_hearing") === "1";
+    const udAutism = localStorage.getItem("ud_autism") === "1";
+    const udOtherTTS = localStorage.getItem("ud_other_tts") === "1";
+    const udOtherReduceUI = localStorage.getItem("ud_other_reduce_ui") === "1";
+    const udOtherColorBlind = localStorage.getItem("ud_other_colorblind") === "1";
+    document.documentElement.classList.toggle("ud-visual", udVisual);
+    document.documentElement.classList.toggle("ud-hearing", udHearing);
+    document.documentElement.classList.toggle("ud-autism", udAutism);
+    document.documentElement.classList.toggle("ud-other-tts", udOtherTTS);
+    document.documentElement.classList.toggle("ud-other-reduce-ui", udOtherReduceUI);
+    document.documentElement.classList.toggle("ud-other-colorblind", udOtherColorBlind);
+    setTtsActive(udVisual || udOtherTTS);
 
-    // storage event fires for OTHER tabs only — use custom event for same tab
     function onStorage(e: StorageEvent) {
-      if (e.key === "ud_visual") setUdVisual(e.newValue === "1");
+      if (e.key === "ud_visual") {
+        document.documentElement.classList.toggle("ud-visual", e.newValue === "1");
+        setTtsActive(e.newValue === "1" || localStorage.getItem("ud_other_tts") === "1");
+      }
+      if (e.key === "ud_other_tts") {
+        document.documentElement.classList.toggle("ud-other-tts", e.newValue === "1");
+        setTtsActive(localStorage.getItem("ud_visual") === "1" || e.newValue === "1");
+      }
+      if (e.key === "ud_other_reduce_ui") document.documentElement.classList.toggle("ud-other-reduce-ui", e.newValue === "1");
+      if (e.key === "ud_other_colorblind") document.documentElement.classList.toggle("ud-other-colorblind", e.newValue === "1");
+      if (e.key === "ud_autism") document.documentElement.classList.toggle("ud-autism", e.newValue === "1");
+      if (e.key === "ud_hearing") document.documentElement.classList.toggle("ud-hearing", e.newValue === "1");
     }
     function onUdChange(e: Event) {
-      setUdVisual((e as CustomEvent).detail === "1");
+      const val = (e as CustomEvent).detail === "1";
+      setTtsActive(val || localStorage.getItem("ud_other_tts") === "1");
     }
     window.addEventListener("storage", onStorage);
     window.addEventListener("ud_visual_change", onUdChange);
@@ -33,7 +56,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    // get username from supabase
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) { router.push("/login"); return; }
@@ -47,7 +69,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="max-w-5xl mx-auto px-4 py-6 pb-28 md:pb-8">
         {children}
       </main>
-      {udVisual && <VisualAccessibility lang={lang} />}
+      {ttsActive && <VisualAccessibility lang={lang} />}
     </div>
   );
 }

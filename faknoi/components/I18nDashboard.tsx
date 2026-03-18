@@ -26,11 +26,17 @@ interface HourByUni {
   hours: { hour: number; count: number }[];
 }
 
+interface ShopByUni {
+  uniId: string;
+  uniName: string;
+  shops: [string, number][];
+}
+
 interface Insights {
   topZonesByUni: ZoneByUni[];
   topItemsByUni: ItemByUni[];
   topHoursByUni: HourByUni[];
-  topShops: [string, number][];
+  topShopsByUni: ShopByUni[];
   totalRecent: number;
 }
 
@@ -64,7 +70,6 @@ const UNI_COLORS = [
 export default function I18nDashboard({ username, trips, orders, allActiveOrders, currentUserId, insights }: Props) {
   const { lang } = useLang();
   const [selectedUni, setSelectedUni] = useState<string>("all");
-
   const statusLabel: Record<string, { label: string; color: string; emoji: string }> = {
     pending:    { label: t(lang,"status_pending"),    color: "bg-yellow-100 text-yellow-700",  emoji: "⏳" },
     accepted:   { label: t(lang,"status_accepted"),   color: "bg-blue-100 text-blue-700",      emoji: "✅" },
@@ -354,28 +359,46 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
           })()}
 
           {/* Top Shops */}
-          {insights.topShops.length > 0 && (
-            <div className="card p-4 space-y-3">
-              <div className="flex items-center gap-1.5">
-                <Store className="w-3.5 h-3.5 text-brand-cyan" />
-                <span className="text-xs font-black text-brand-navy">ร้านฮิต</span>
-                <span className="ml-auto text-xs text-gray-400">7 วันล่าสุด</span>
+          {(() => {
+            const filtered = selectedUni === "all"
+              ? insights.topShopsByUni
+              : insights.topShopsByUni.filter((u) => u.uniId === selectedUni);
+            if (!filtered.length) return null;
+            return (
+              <div className="card p-4 space-y-4">
+                <div className="flex items-center gap-1.5">
+                  <Store className="w-3.5 h-3.5 text-brand-cyan" />
+                  <span className="text-xs font-black text-brand-navy">ร้านฮิต</span>
+                  <span className="ml-auto text-xs text-gray-400">7 วันล่าสุด</span>
+                </div>
+                {filtered.map((uni, uniIdx) => {
+                  const color = UNI_COLORS[uniIdx % UNI_COLORS.length];
+                  return (
+                    <div key={uni.uniId} className="space-y-2">
+                      {selectedUni === "all" && (
+                        <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
+                          {getUniShortNameById(uni.uniId, lang)}
+                        </span>
+                      )}
+                      <div className="flex flex-wrap gap-2 pl-2">
+                        {uni.shops.map(([shop, count], i) => (
+                          <div key={shop} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold border ${
+                            i === 0 ? "bg-brand-blue/10 border-brand-blue/20 text-brand-blue"
+                            : i === 1 ? "bg-brand-cyan/10 border-brand-cyan/20 text-brand-navy"
+                            : "bg-gray-50 border-gray-100 text-gray-600"
+                          }`}>
+                            {i === 0 && <Flame className="w-3 h-3 text-orange-400" />}
+                            {capitalize(shop)}
+                            <span className="opacity-60">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {insights.topShops.map(([shop, count], i) => (
-                  <div key={shop} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold border ${
-                    i === 0 ? "bg-brand-blue/10 border-brand-blue/20 text-brand-blue"
-                    : i === 1 ? "bg-brand-cyan/10 border-brand-cyan/20 text-brand-navy"
-                    : "bg-gray-50 border-gray-100 text-gray-600"
-                  }`}>
-                    {i === 0 && <Flame className="w-3 h-3 text-orange-400" />}
-                    {capitalize(shop)}
-                    <span className="opacity-60">{count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       )}
     </div>

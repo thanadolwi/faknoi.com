@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import {
   Globe, Lock, Eye, EyeOff, Sun, Moon, Accessibility,
-  Volume2, Brain, MoreHorizontal, Check, ChevronRight, LogOut
+  Volume2, Brain, MoreHorizontal, Check, ChevronRight, LogOut,
+  Mic, Palette, Layers
 } from "lucide-react";
 import VisualAccessibility from "@/components/VisualAccessibility";
 import { useLang, type Lang } from "@/lib/LangContext";
@@ -40,6 +41,12 @@ const LABELS: Record<Lang, Record<string, string>> = {
     autismDesc: "ลด animation, UI เรียบง่ายขึ้น",
     other: "อื่นๆ",
     otherDesc: "ปรับแต่งเพิ่มเติมตามต้องการ",
+    otherTTS: "อ่านข้อความออกเสียง",
+    otherTTSDesc: "แตะข้อความใดก็ได้เพื่อฟังเสียงอ่าน",
+    otherReduceUI: "ลด UI",
+    otherReduceUIDesc: "ซ่อน gradient, shadow และ decoration",
+    otherColorBlind: "สำหรับตาบอดสี",
+    otherColorBlindDesc: "ปรับสีให้แยกแยะได้ง่ายขึ้น",
     theme: "ธีม",
     themeLight: "Light",
     themeDark: "Dark",
@@ -70,6 +77,12 @@ const LABELS: Record<Lang, Record<string, string>> = {
     autismDesc: "Reduce animations, simpler UI",
     other: "Other",
     otherDesc: "Additional customization",
+    otherTTS: "Text-to-Speech",
+    otherTTSDesc: "Tap any text to hear it read aloud",
+    otherReduceUI: "Reduce UI",
+    otherReduceUIDesc: "Hide gradients, shadows and decorations",
+    otherColorBlind: "Color Blind Mode",
+    otherColorBlindDesc: "Adjust colors for easier distinction",
     theme: "Theme",
     themeLight: "Light",
     themeDark: "Dark",
@@ -100,6 +113,12 @@ const LABELS: Record<Lang, Record<string, string>> = {
     autismDesc: "减少动画，简化界面",
     other: "其他",
     otherDesc: "其他自定义设置",
+    otherTTS: "文字转语音",
+    otherTTSDesc: "点击任意文字即可听到朗读",
+    otherReduceUI: "简化界面",
+    otherReduceUIDesc: "隐藏渐变、阴影和装饰",
+    otherColorBlind: "色盲模式",
+    otherColorBlindDesc: "调整颜色以便于区分",
     theme: "主题",
     themeLight: "浅色",
     themeDark: "深色",
@@ -130,6 +149,12 @@ const LABELS: Record<Lang, Record<string, string>> = {
     autismDesc: "एनिमेशन कम करें, सरल UI",
     other: "अन्य",
     otherDesc: "अतिरिक्त कस्टमाइज़ेशन",
+    otherTTS: "टेक्स्ट-टू-स्पीच",
+    otherTTSDesc: "किसी भी टेक्स्ट पर टैप करें",
+    otherReduceUI: "UI कम करें",
+    otherReduceUIDesc: "ग्रेडिएंट, शैडो छुपाएं",
+    otherColorBlind: "कलर ब्लाइंड मोड",
+    otherColorBlindDesc: "रंगों को आसानी से पहचानें",
     theme: "थीम",
     themeLight: "लाइट",
     themeDark: "डार्क",
@@ -150,6 +175,9 @@ export default function AccountPage() {
   const [udHearing, setUdHearing] = useState(false);
   const [udAutism, setUdAutism] = useState(false);
   const [udOther, setUdOther] = useState(false);
+  const [udOtherTTS, setUdOtherTTS] = useState(false);
+  const [udOtherReduceUI, setUdOtherReduceUI] = useState(false);
+  const [udOtherColorBlind, setUdOtherColorBlind] = useState(false);
 
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -171,6 +199,9 @@ export default function AccountPage() {
     setUdHearing(localStorage.getItem("ud_hearing") === "1");
     setUdAutism(localStorage.getItem("ud_autism") === "1");
     setUdOther(localStorage.getItem("ud_other") === "1");
+    setUdOtherTTS(localStorage.getItem("ud_other_tts") === "1");
+    setUdOtherReduceUI(localStorage.getItem("ud_other_reduce_ui") === "1");
+    setUdOtherColorBlind(localStorage.getItem("ud_other_colorblind") === "1");
   }, []);
 
   // Apply theme to <html>
@@ -202,6 +233,21 @@ export default function AccountPage() {
   useEffect(() => {
     localStorage.setItem("ud_other", udOther ? "1" : "0");
   }, [udOther]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("ud-other-tts", udOtherTTS);
+    localStorage.setItem("ud_other_tts", udOtherTTS ? "1" : "0");
+  }, [udOtherTTS]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("ud-other-reduce-ui", udOtherReduceUI);
+    localStorage.setItem("ud_other_reduce_ui", udOtherReduceUI ? "1" : "0");
+  }, [udOtherReduceUI]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("ud-other-colorblind", udOtherColorBlind);
+    localStorage.setItem("ud_other_colorblind", udOtherColorBlind ? "1" : "0");
+  }, [udOtherColorBlind]);
 
   // setLang is now from useLang() context — no local handler needed
 
@@ -238,6 +284,14 @@ export default function AccountPage() {
     { key: "autism",  icon: Brain,          val: udAutism,  set: setUdAutism,  label: t.autism,  desc: t.autismDesc },
     { key: "other",   icon: MoreHorizontal, val: udOther,   set: setUdOther,   label: t.other,   desc: t.otherDesc },
   ];
+
+  const udOtherSubItems = [
+    { key: "tts",        icon: Mic,     val: udOtherTTS,        set: setUdOtherTTS,        label: t.otherTTS,        desc: t.otherTTSDesc },
+    { key: "reduceui",   icon: Layers,  val: udOtherReduceUI,   set: setUdOtherReduceUI,   label: t.otherReduceUI,   desc: t.otherReduceUIDesc },
+    { key: "colorblind", icon: Palette, val: udOtherColorBlind, set: setUdOtherColorBlind, label: t.otherColorBlind, desc: t.otherColorBlindDesc },
+  ];
+
+  const ttsActive = udVisual || udOtherTTS;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28 md:pb-10">
@@ -312,32 +366,61 @@ export default function AccountPage() {
           <p className="text-xs text-gray-400 mb-3">{t.universalDesc}</p>
           <div className="space-y-2">
             {udItems.map(({ key, icon: Icon, val, set, label, desc }) => (
-              <button key={key} onClick={() => set(!val)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all duration-200 text-left ${
-                  val ? "border-brand-blue bg-brand-blue/5" : "border-gray-100 bg-gray-50 hover:border-brand-blue/30"
-                }`}>
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  val ? "text-white" : "bg-gray-200 text-gray-500"
-                }`} style={val ? { background: "linear-gradient(135deg,#5478FF,#53CBF3)" } : {}}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`font-black text-sm ${val ? "text-brand-navy" : "text-gray-700"}`}>{label}</p>
-                  <p className="text-xs text-gray-400 truncate">{desc}</p>
-                </div>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                  val ? "border-brand-blue bg-brand-blue" : "border-gray-300"
-                }`}>
-                  {val && <Check className="w-3 h-3 text-white" />}
-                </div>
-              </button>
+              <div key={key}>
+                <button onClick={() => set(!val)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all duration-200 text-left ${
+                    val ? "border-brand-blue bg-brand-blue/5" : "border-gray-100 bg-gray-50 hover:border-brand-blue/30"
+                  }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    val ? "text-white" : "bg-gray-200 text-gray-500"
+                  }`} style={val ? { background: "linear-gradient(135deg,#5478FF,#53CBF3)" } : {}}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-black text-sm ${val ? "text-brand-navy" : "text-gray-700"}`}>{label}</p>
+                    <p className="text-xs text-gray-400 truncate">{desc}</p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                    val ? "border-brand-blue bg-brand-blue" : "border-gray-300"
+                  }`}>
+                    {val && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                </button>
+                {/* Sub-options for "อื่นๆ" */}
+                {key === "other" && val && (
+                  <div className="mt-2 ml-4 space-y-1.5 border-l-2 border-brand-blue/20 pl-3">
+                    {udOtherSubItems.map(({ key: sk, icon: SIcon, val: sv, set: sset, label: slabel, desc: sdesc }) => (
+                      <button key={sk} onClick={() => sset(!sv)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border transition-all duration-200 text-left ${
+                          sv ? "border-brand-blue/40 bg-brand-blue/5" : "border-gray-100 bg-gray-50 hover:border-brand-blue/20"
+                        }`}>
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          sv ? "text-white" : "bg-gray-200 text-gray-500"
+                        }`} style={sv ? { background: "linear-gradient(135deg,#5478FF,#53CBF3)" } : {}}>
+                          <SIcon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-bold text-xs ${sv ? "text-brand-navy" : "text-gray-700"}`}>{slabel}</p>
+                          <p className="text-[10px] text-gray-400 truncate">{sdesc}</p>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                          sv ? "border-brand-blue bg-brand-blue" : "border-gray-300"
+                        }`}>
+                          {sv && <Check className="w-2.5 h-2.5 text-white" />}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
-          {udVisual && (
+          {ttsActive && (
             <p className="mt-3 text-xs text-brand-blue font-bold bg-brand-blue/5 rounded-2xl px-3 py-2">
               {t.ttsNote}
             </p>
-          )}        </div>
+          )}
+        </div>
 
         {/* Theme */}
         <div className="card">
@@ -371,7 +454,7 @@ export default function AccountPage() {
       </div>
 
       {/* Visual Accessibility floating widget */}
-      {udVisual && <VisualAccessibility lang={lang} />}
+      {ttsActive && <VisualAccessibility lang={lang} />}
     </div>
   );
 }

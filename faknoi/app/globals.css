@@ -164,9 +164,33 @@
 .ud-visual select option { background: #111 !important; color: #fff !important; }
 .ud-visual * { letter-spacing: 0.03em; }
 
-/* ===== Universal Design: Autism (reduce motion) ===== */
+/* ===== Universal Design: Autism (reduce motion + simplify UI) ===== */
 .ud-autism *, .ud-autism *::before, .ud-autism *::after {
   animation: none !important;
   transition: none !important;
 }
 .ud-autism .card:hover { box-shadow: 0 2px 16px rgba(17,31,162,0.07) !important; }
+.ud-autism .hero-grad { background: #111FA2 !important; }
+.ud-autism .btn-primary { background: #5478FF !important; box-shadow: none !important; }
+.ud-autism .btn-secondary { background: #FFDE42 !important; box-shadow: none !important; }
+.ud-autism .card { box-shadow: none !important; border: 1.5px solid #e5e7eb !important; }
+
+/* ===== Universal Design: Reduce UI ===== */
+.ud-other-reduce-ui .hero-grad { background: #111FA2 !important; }
+.ud-other-reduce-ui .btn-primary { background: #5478FF !important; box-shadow: none !important; }
+.ud-other-reduce-ui .btn-secondary { background: #FFDE42 !important; box-shadow: none !important; }
+.ud-other-reduce-ui .card { box-shadow: none !important; border: 1.5px solid #e5e7eb !important; }
+.ud-other-reduce-ui .card:hover { box-shadow: none !important; }
+.ud-other-reduce-ui [class*="blur"] { filter: none !important; }
+.ud-other-reduce-ui .animate-float { animation: none !important; }
+
+/* ===== Universal Design: Color Blind ===== */
+.ud-other-colorblind .bg-green-100 { background-color: #dbeafe !important; }
+.ud-other-colorblind .text-green-700 { color: #1d4ed8 !important; }
+.ud-other-colorblind .bg-red-100 { background-color: #fef9c3 !important; }
+.ud-other-colorblind .text-red-500, .ud-other-colorblind .text-red-700 { color: #92400e !important; }
+.ud-other-colorblind .bg-yellow-100 { background-color: #e0e7ff !important; }
+.ud-other-colorblind .text-yellow-700 { color: #3730a3 !important; }
+.ud-other-colorblind .bg-brand-blue\/10 { background-color: #f3f4f6 !important; }
+.ud-other-colorblind .text-brand-blue { color: #1e40af !important; }
+.ud-other-colorblind .hero-grad { background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 55%, #0369a1 100%) !important; }
