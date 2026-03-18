@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { MapPin, Clock, Users, ArrowLeft, Plus, GraduationCap, Banknote, CreditCard } from "lucide-react";
+import { MapPin, Clock, Users, ArrowLeft, Plus, GraduationCap, Banknote, CreditCard, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { UNIVERSITIES } from "@/lib/universities";
 import { useLang } from "@/lib/LangContext";
@@ -64,6 +64,22 @@ export default function CreateTripPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [outstanding, setOutstanding] = useState<number | null>(null);
+
+  useEffect(() => {
+    async function checkBalance() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("outstanding_balance")
+        .eq("id", user.id)
+        .single();
+      setOutstanding(Number(profile?.outstanding_balance || 0));
+    }
+    checkBalance();
+  }, []);
 
   const selectedUni = UNIVERSITIES.find((u) => u.id === selectedUniId);
   const filteredUnis = UNIVERSITIES.filter((u) =>
@@ -110,6 +126,25 @@ export default function CreateTripPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Outstanding balance warning */}
+        {outstanding !== null && outstanding > 1000 && (
+          <div className="card border-2 border-red-200 bg-red-50 space-y-3">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-black text-red-700 text-sm">ยอดค้างชำระถึงเกณฑ์ที่กำหนด</p>
+                <p className="text-xs text-red-600 mt-1">
+                  กรุณาชำระยอดค้างชำระที่หน้า "ถุงเงิน" ก่อนเปิดทริปใหม่
+                </p>
+                <p className="text-xs text-red-500 font-bold mt-0.5">ค้างชำระอยู่: ฿{outstanding.toFixed(2)}</p>
+              </div>
+            </div>
+            <Link href="/wallet"
+              className="btn-primary w-full py-2.5 text-sm flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600">
+              💰 ไปที่ถุงเงิน
+            </Link>
+          </div>
+        )}
         {/* Route */}
         <div className="card space-y-4">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">📍 {t(lang, "ct_route")}</p>
@@ -207,7 +242,7 @@ export default function CreateTripPage() {
 
         {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">{error}</div>}
 
-        <button type="submit" disabled={loading || !selectedUniId} className="btn-primary w-full flex items-center justify-center gap-2 py-3">
+        <button type="submit" disabled={loading || !selectedUniId || (outstanding !== null && outstanding > 1000)} className="btn-primary w-full flex items-center justify-center gap-2 py-3">
           {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus className="w-4 h-4" />}
           {loading ? t(lang, "ct_creating") : t(lang, "ct_open_trip")}
         </button>

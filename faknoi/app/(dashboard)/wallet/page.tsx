@@ -1,21 +1,32 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { TrendingUp, AlertCircle, Upload, ImageIcon, X, CheckCircle } from "lucide-react";
+import { TrendingUp, AlertCircle, Upload, ImageIcon, X, CheckCircle, Clock, BadgeCheck, RefreshCw, Wallet } from "lucide-react";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
 
 const MAX_SIZE = 500 * 1024;
+const ADMIN_USERNAME = "testtest";
+
+type SlipStatus = "pending" | "verified" | "updated";
 
 export default function WalletPage() {
   const [orders, setOrders] = useState<any[]>([]);
+  const [outstanding, setOutstanding] = useState(0);
+  const [mySlips, setMySlips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
+  const [amountInput, setAmountInput] = useState("");
+  const [amountError, setAmountError] = useState("");
+  const [userId, setUserId] = useState("");
+  // Admin
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [allSlips, setAllSlips] = useState<any[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const { lang } = useLang();
 
@@ -23,25 +34,60 @@ export default function WalletPage() {
     async function load() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: myTrips } = await supabase.from("trips").select("id").eq("shopper_id", user?.id);
+      if (!user) return;
+      setUserId(user.id);
+
+      const username = user.user_metadata?.username || "";
+      const adminMode = username === ADMIN_USERNAME;
+      setIsAdmin(adminMode);
+
+      // Load profile outstanding balance
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("outstanding_balance")
+        .eq("id", user.id)
+        .single();
+      setOutstanding(Number(profile?.outstanding_balance || 0));
+
+      // Load completed orders
+      const { data: myTrips } = await supabase.from("trips").select("id").eq("shopper_id", user.id);
       const tripIds = (myTrips || []).map((t: any) => t.id);
-      if (!tripIds.length) { setLoading(false); return; }
-      const { data } = await supabase
-        .from("orders")
-        .select("id, final_price, created_at, trips(origin_zone, destination_zone)")
-        .in("trip_id", tripIds)
-        .eq("status", "completed")
-        .not("final_price", "is", null)
+      if (tripIds.length) {
+        const { data } = await supabase
+          .from("orders")
+          .select("id, final_price, created_at, trips(origin_zone, destination_zone)")
+          .in("trip_id", tripIds)
+          .eq("status", "completed")
+          .not("final_price", "is", null)
+          .order("created_at", { ascending: false });
+        setOrders(data || []);
+      }
+
+      // Load my slips
+      const { data: slips } = await supabase
+        .from("payment_slips")
+        .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
-      setOrders(data || []);
+      setMySlips(slips || []);
+
+      // Admin: load all slips
+      if (adminMode) {
+        const { data: adminSlips } = await supabase
+          .from("payment_slips")
+          .select("*, profiles(username)")
+          .order("created_at", { ascending: false });
+        setAllSlips(adminSlips || []);
+      }
+
       setLoading(false);
     }
     load();
   }, []);
 
   const totalActual = orders.reduce((s, o) => s + Number(o.final_price), 0);
-  const totalFee    = Math.round(totalActual * 0.05 * 100) / 100;
-  const hasFee      = totalFee > 0;
+  const totalFee = Math.round(totalActual * 0.05 * 100) / 100;
+  const hasFee = totalFee > 0 || outstanding > 0;
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -53,18 +99,84 @@ export default function WalletPage() {
     setPreview(URL.createObjectURL(f));
   }
 
+  function validateAmount(): boolean {
+    const val = parseFloat(amountInput);
+    if (!amountInput || isNaN(val) || val <= 0) {
+      setAmountError("กรุณากรอกยอดชำระ");
+      return false;
+    }
+    if (val > outstanding) {
+      setAmountError(`คุณค้างชำระ FakNoi เพียงจำนวนเงิน ${outstanding.toFixed(2)} บาท`);
+      return false;
+    }
+    setAmountError("");
+    return true;
+  }
+
   async function handleUpload() {
-    if (!file) return;
+    if (!file || !validateAmount()) return;
     setUploading(true);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
     const ext = file.name.split(".").pop();
-    const path = `${user!.id}/fee-slip-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("payment-slips").upload(path, file, { upsert: true });
-    if (error) { setFileError(t(lang, "w_upload_fail")); setUploading(false); return; }
+    const path = `${userId}/fee-slip-${Date.now()}.${ext}`;
+    const { data: uploadData, error: uploadErr } = await supabase.storage
+      .from("payment-slips")
+      .upload(path, file, { upsert: true });
+    if (uploadErr) { setFileError(t(lang, "w_upload_fail")); setUploading(false); return; }
+
+    const { data: urlData } = supabase.storage.from("payment-slips").getPublicUrl(path);
+    const slipUrl = urlData?.publicUrl || path;
+    const amountPaid = parseFloat(amountInput);
+
+    await supabase.from("payment_slips").insert({
+      user_id: userId,
+      slip_url: slipUrl,
+      amount_paid: amountPaid,
+      outstanding_before: outstanding,
+      status: "pending",
+    });
+
     setUploaded(true);
     setUploading(false);
+    // Refresh slips
+    const { data: slips } = await supabase
+      .from("payment_slips")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    setMySlips(slips || []);
   }
+
+  async function adminUpdateSlip(slipId: string, slip: any, newStatus: SlipStatus) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("payment_slips").update({
+      status: newStatus,
+      reviewed_by: user?.id,
+      updated_at: new Date().toISOString(),
+    }).eq("id", slipId);
+
+    // If verified -> deduct from outstanding
+    if (newStatus === "updated") {
+      const newBalance = Math.max(0, slip.outstanding_before - slip.amount_paid);
+      await supabase.from("profiles")
+        .update({ outstanding_balance: newBalance })
+        .eq("id", slip.user_id);
+    }
+
+    // Refresh
+    const { data: adminSlips } = await supabase
+      .from("payment_slips")
+      .select("*, profiles(username)")
+      .order("created_at", { ascending: false });
+    setAllSlips(adminSlips || []);
+  }
+
+  const statusBadge: Record<SlipStatus, { label: string; color: string; icon: React.ReactNode }> = {
+    pending:  { label: "กำลังตรวจสลิปการโอนเงิน", color: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: <Clock className="w-3.5 h-3.5" /> },
+    verified: { label: "ตรวจสอบเรียบร้อย",         color: "bg-blue-100 text-blue-700 border-blue-200",     icon: <BadgeCheck className="w-3.5 h-3.5" /> },
+    updated:  { label: "อัปเดตข้อมูลเสร็จสิ้น",    color: "bg-green-100 text-green-700 border-green-200",  icon: <CheckCircle className="w-3.5 h-3.5" /> },
+  };
 
   if (loading) {
     return (
@@ -81,6 +193,7 @@ export default function WalletPage() {
         <p className="text-sm text-gray-400 mt-0.5">{t(lang, "w_subtitle")}</p>
       </div>
 
+      {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
         <div className="card text-center py-5">
           <p className="text-xs text-gray-400 font-medium mb-1">{t(lang, "w_total")}</p>
@@ -88,12 +201,70 @@ export default function WalletPage() {
           <p className="text-xs text-gray-300 mt-1">{orders.length} {t(lang, "w_orders_count")}</p>
         </div>
         <div className="card text-center py-5" style={{background:"linear-gradient(135deg,#5478FF,#53CBF3)"}}>
-          <p className="text-xs text-white/70 font-medium mb-1">{t(lang, "w_fee_label")}</p>
-          <p className="text-2xl font-black text-white">฿{totalFee.toFixed(2)}</p>
+          <p className="text-xs text-white/70 font-medium mb-1">ค้างชำระ FakNoi</p>
+          <p className="text-2xl font-black text-white">฿{outstanding.toFixed(2)}</p>
+          <p className="text-xs text-white/60 mt-1">5% ของรายได้</p>
         </div>
       </div>
 
-      {hasFee && (
+      {/* Admin Panel */}
+      {isAdmin && (
+        <div className="card space-y-3 border-2 border-brand-blue/20">
+          <div className="flex items-center gap-2">
+            <BadgeCheck className="w-4 h-4 text-brand-blue" />
+            <p className="font-black text-brand-navy text-sm">🛡️ Admin — ตรวจสลิปทั้งหมด</p>
+          </div>
+          {allSlips.length === 0 ? (
+            <p className="text-xs text-gray-400">ยังไม่มีสลิป</p>
+          ) : (
+            <div className="space-y-3">
+              {allSlips.map((slip: any) => {
+                const s = statusBadge[slip.status as SlipStatus] || statusBadge.pending;
+                return (
+                  <div key={slip.id} className="bg-gray-50 rounded-2xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-brand-navy">@{slip.profiles?.username}</span>
+                      <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg border ${s.color}`}>
+                        {s.icon}{s.label}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 space-y-0.5">
+                      <p>ยอดที่กรอก: <span className="font-black text-brand-navy">฿{Number(slip.amount_paid).toFixed(2)}</span></p>
+                      <p>ค้างก่อนชำระ: <span className="font-black text-brand-navy">฿{Number(slip.outstanding_before).toFixed(2)}</span></p>
+                      {slip.outstanding_before > slip.amount_paid && (
+                        <p className="text-orange-600 font-bold">ยังค้างอยู่: ฿{(slip.outstanding_before - slip.amount_paid).toFixed(2)}</p>
+                      )}
+                    </div>
+                    <a href={slip.slip_url} target="_blank" rel="noopener noreferrer"
+                      className="block rounded-xl overflow-hidden border border-gray-200">
+                      <img src={slip.slip_url} alt="slip" className="w-full max-h-40 object-contain bg-white" />
+                    </a>
+                    {slip.status !== "updated" && (
+                      <div className="flex gap-2">
+                        {slip.status === "pending" && (
+                          <button onClick={() => adminUpdateSlip(slip.id, slip, "verified")}
+                            className="flex-1 text-xs font-bold py-2 rounded-xl bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors">
+                            ✅ ตรวจสอบเรียบร้อย
+                          </button>
+                        )}
+                        {slip.status === "verified" && (
+                          <button onClick={() => adminUpdateSlip(slip.id, slip, "updated")}
+                            className="flex-1 text-xs font-bold py-2 rounded-xl bg-green-100 text-green-700 hover:bg-green-200 transition-colors">
+                            🔄 อัปเดตข้อมูลเสร็จสิ้น
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Payment Section */}
+      {hasFee && !isAdmin && (
         <>
           <div className="card border-2 border-brand-yellow/40 bg-brand-yellow/5">
             <div className="flex items-start gap-3">
@@ -111,6 +282,28 @@ export default function WalletPage() {
           <div className="card space-y-3">
             <p className="font-black text-brand-navy text-sm">{t(lang, "w_attach_slip")}</p>
             <p className="text-xs text-gray-400 font-medium">{t(lang, "w_slip_size")}</p>
+
+            {/* Amount Input */}
+            <div>
+              <label className="text-sm font-bold text-brand-navy mb-1.5 flex items-center gap-1.5 block">
+                <Wallet className="w-3.5 h-3.5 text-brand-blue" />
+                ยอดที่ชำระ (บาท) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                className="input-field"
+                placeholder={`ค้างชำระอยู่ ฿${outstanding.toFixed(2)}`}
+                value={amountInput}
+                onChange={(e) => { setAmountInput(e.target.value); setAmountError(""); }}
+              />
+              {amountError && (
+                <p className="text-xs text-red-500 font-medium mt-1.5 bg-red-50 px-3 py-2 rounded-lg border border-red-100">
+                  ⚠️ {amountError}
+                </p>
+              )}
+            </div>
 
             {uploaded ? (
               <div className="flex items-center gap-3 bg-green-50 border border-green-100 rounded-2xl px-4 py-3">
@@ -151,9 +344,34 @@ export default function WalletPage() {
               </>
             )}
           </div>
+
+          {/* My Slip History */}
+          {mySlips.length > 0 && (
+            <div className="card space-y-3">
+              <p className="font-black text-brand-navy text-sm flex items-center gap-2">
+                <RefreshCw className="w-3.5 h-3.5 text-brand-blue" />
+                ประวัติการส่งสลิป
+              </p>
+              {mySlips.map((slip: any) => {
+                const s = statusBadge[slip.status as SlipStatus] || statusBadge.pending;
+                return (
+                  <div key={slip.id} className="bg-gray-50 rounded-2xl p-3 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">{new Date(slip.created_at).toLocaleDateString("th-TH")}</span>
+                      <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg border ${s.color}`}>
+                        {s.icon}{s.label}
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-brand-navy">ยอดชำระ: ฿{Number(slip.amount_paid).toFixed(2)}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
 
+      {/* Completed Orders */}
       <div>
         <h2 className="font-black text-brand-navy mb-3 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-brand-blue" />
