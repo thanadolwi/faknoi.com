@@ -71,13 +71,11 @@ export default function WalletPage() {
         .order("created_at", { ascending: false });
       setMySlips(slips || []);
 
-      // Admin: load all slips
+      // Admin: load all slips via API (bypasses RLS)
       if (adminMode) {
-        const { data: adminSlips } = await supabase
-          .from("payment_slips")
-          .select("*, profiles(username)")
-          .order("created_at", { ascending: false });
-        setAllSlips(adminSlips || []);
+        const res = await fetch("/api/admin/slips");
+        const json = await res.json();
+        setAllSlips(json.slips || []);
       }
 
       setLoading(false);
@@ -148,28 +146,15 @@ export default function WalletPage() {
   }
 
   async function adminUpdateSlip(slipId: string, slip: any, newStatus: SlipStatus) {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("payment_slips").update({
-      status: newStatus,
-      reviewed_by: user?.id,
-      updated_at: new Date().toISOString(),
-    }).eq("id", slipId);
-
-    // If verified -> deduct from outstanding
-    if (newStatus === "updated") {
-      const newBalance = Math.max(0, slip.outstanding_before - slip.amount_paid);
-      await supabase.from("profiles")
-        .update({ outstanding_balance: newBalance })
-        .eq("id", slip.user_id);
-    }
-
+    await fetch("/api/admin/slips", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slipId, status: newStatus, slip }),
+    });
     // Refresh
-    const { data: adminSlips } = await supabase
-      .from("payment_slips")
-      .select("*, profiles(username)")
-      .order("created_at", { ascending: false });
-    setAllSlips(adminSlips || []);
+    const res = await fetch("/api/admin/slips");
+    const json = await res.json();
+    setAllSlips(json.slips || []);
   }
 
   const statusBadge: Record<SlipStatus, { label: string; color: string; icon: React.ReactNode }> = {
