@@ -28,7 +28,7 @@ export async function GET() {
     const adminSupabase = createAdminClient();
     const { data, error } = await adminSupabase
       .from("payment_slips")
-      .select("id, user_id, slip_url, amount_paid, outstanding_before, status, created_at, profiles(username)")
+      .select("id, user_id, slip_url, amount_paid, outstanding_before, status, created_at, profiles!payment_slips_user_id_fkey(username)")
       .order("created_at", { ascending: false });
 
     if (error) {
