@@ -234,11 +234,17 @@ export default function OrderStatusActions({
           const { data: { user } } = await supabase.auth.getUser();
           await supabase.from("orders").update({ status: "completed", updated_at: new Date().toISOString() }).eq("id", orderId);
           if (finalPrice && user) {
-            await supabase.from("wallet_transactions").insert({
-              shopper_id: user.id,
-              order_id: orderId,
-              actual_price: finalPrice,
-            });
+            const fee = Math.round(finalPrice * 0.05 * 100) / 100;
+            // อัปเดต outstanding_balance ใน profiles
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("outstanding_balance")
+              .eq("id", user.id)
+              .single();
+            const current = Number(profile?.outstanding_balance || 0);
+            await supabase.from("profiles")
+              .update({ outstanding_balance: current + fee })
+              .eq("id", user.id);
           }
           router.refresh();
           setLoading(false);
