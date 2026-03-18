@@ -71,7 +71,7 @@ export default async function DashboardPage() {
 
   const hourByUni: Record<string, Record<number, number>> = {};
   for (const trip of recentTrips || []) {
-    const h = new Date(trip.created_at).getHours();
+    const h = new Date(new Date(trip.created_at).getTime() + 7 * 60 * 60 * 1000).getUTCHours();
     const uniId = (trip as any).university_id || "other";
     if (!hourByUni[uniId]) hourByUni[uniId] = {};
     hourByUni[uniId][h] = (hourByUni[uniId][h] || 0) + 1;
