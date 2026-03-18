@@ -2,7 +2,7 @@
 import I18nDashboard from "@/components/I18nDashboard";
 import { UNIVERSITIES } from "@/lib/universities";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -36,7 +36,7 @@ export default async function DashboardPage() {
       .from("orders")
       .select("id, status, created_at, trip_id, trips(origin_zone, destination_zone, shopper_id, profiles(username)), profiles(username)")
       .eq("buyer_id", user?.id)
-      .not("status", "in", '("completed","cancelled")')
+      .not("status", "in", "(\"completed\",\"cancelled\")")
       .order("created_at", { ascending: false }),
     supabase.from("trips").select("id").eq("shopper_id", user?.id),
     adminSupabase
@@ -46,7 +46,7 @@ export default async function DashboardPage() {
       .not("status", "eq", "cancelled"),
     adminSupabase
       .from("trips")
-      .select("created_at, university_id")
+      .select("created_at, origin_zone, university_id")
       .gte("created_at", since),
   ]);
 
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
         .from("orders")
         .select("id, status, created_at, trip_id, trips(origin_zone, destination_zone, shopper_id, profiles(username)), profiles(username)")
         .in("trip_id", shopperTripIds)
-        .not("status", "in", '("completed","cancelled")')
+        .not("status", "in", "(\"completed\",\"cancelled\")")
         .order("created_at", { ascending: false })
     : { data: [] };
 
@@ -74,6 +74,17 @@ export default async function DashboardPage() {
   const itemByUni: Record<string, Record<string, number>> = {};
   const shopCount: Record<string, number> = {};
 
+  // โซนฮิต: นับจาก trips ด้วย ทำให้ขึ้นทันทีที่มีทริปใหม่
+  for (const trip of recentTrips || []) {
+    const zone = (trip as any).origin_zone;
+    const uniId = (trip as any).university_id || "other";
+    if (zone) {
+      if (!zoneByUni[uniId]) zoneByUni[uniId] = {};
+      zoneByUni[uniId][zone] = (zoneByUni[uniId][zone] || 0) + 1;
+    }
+  }
+
+  // เมนูฮิต/ร้านฮิต/โซนฮิตเพิ่มเติม: นับจาก orders
   for (const order of recentOrders || []) {
     const trip = order.trips as any;
     const zone = trip?.origin_zone;
@@ -121,7 +132,7 @@ export default async function DashboardPage() {
   })).sort((a, b) => b.hours.reduce((s, h) => s + h.count, 0) - a.hours.reduce((s, h) => s + h.count, 0));
 
   const topShops = Object.entries(shopCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  const totalRecent = (recentOrders || []).length;
+  const totalRecent = (recentOrders || []).length + (recentTrips || []).length;
 
   return (
     <I18nDashboard
