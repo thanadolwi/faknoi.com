@@ -9,26 +9,38 @@ export default async function DashboardPage() {
   const adminSupabase = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
   const username = user?.user_metadata?.username || user?.email?.split("@")[0] || "ผู้ใช้";
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  // trips — ใช้ admin client เพื่อ bypass RLS กรองเต็มออก
-  const { data: allTrips } = await adminSupabase
-    .from("trips").select("*, profiles(username)")
-    .eq("status", "open").gt("cutoff_time", new Date().toISOString())
-    .order("created_at", { ascending: false }).limit(10);
+  // ยิง queries ทั้งหมดพร้อมกัน
+  const [
+    { data: allTrips },
+    { data: orders },
+    { data: buyerActiveOrders },
+    { data: shopperTrips },
+    { data: recentOrders },
+  ] = await Promise.all([
+    adminSupabase
+      .from("trips").select("*, profiles(username)")
+      .eq("status", "open").gt("cutoff_time", new Date().toISOString())
+      .order("created_at", { ascending: false }).limit(10),
+    supabase
+      .from("orders").select("*, trips(origin_zone, destination_zone)")
+      .eq("buyer_id", user?.id)
+      .order("created_at", { ascending: false }).limit(3),
+    supabase
+      .from("orders")
+      .select("*, trips(origin_zone, destination_zone, shopper_id, profiles(username)), profiles(username)")
+      .eq("buyer_id", user?.id).not("status", "in", '("completed","cancelled")')
+      .order("created_at", { ascending: false }),
+    supabase.from("trips").select("id").eq("shopper_id", user?.id),
+    adminSupabase
+      .from("orders")
+      .select("items, trips(origin_zone, destination_zone, university_id), created_at")
+      .gte("created_at", since)
+      .not("status", "eq", "cancelled"),
+  ]);
+
   const trips = (allTrips || []).filter((t: any) => t.current_orders < t.max_orders).slice(0, 3);
-
-  const { data: orders } = await supabase
-    .from("orders").select("*, trips(origin_zone, destination_zone)")
-    .eq("buyer_id", user?.id)
-    .order("created_at", { ascending: false }).limit(3);
-
-  const { data: buyerActiveOrders } = await supabase
-    .from("orders")
-    .select("*, trips(origin_zone, destination_zone, shopper_id, profiles(username)), profiles(username)")
-    .eq("buyer_id", user?.id).not("status", "in", '("completed","cancelled")')
-    .order("created_at", { ascending: false });
-
-  const { data: shopperTrips } = await supabase.from("trips").select("id").eq("shopper_id", user?.id);
   const shopperTripIds = (shopperTrips || []).map((t: any) => t.id);
 
   const { data: shopperActiveOrders } = shopperTripIds.length > 0
@@ -42,14 +54,6 @@ export default async function DashboardPage() {
     ...(buyerActiveOrders || []),
     ...(shopperActiveOrders || []).filter((o: any) => !(buyerActiveOrders || []).find((b: any) => b.id === o.id)),
   ];
-
-  // Insights — ดึง orders ทุกคน 7 วันล่าสุด (bypass RLS)
-  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: recentOrders } = await adminSupabase
-    .from("orders")
-    .select("items, trips(origin_zone, destination_zone, university_id), created_at")
-    .gte("created_at", since)
-    .not("status", "eq", "cancelled");
 
   // build university shortName map
   const uniMap: Record<string, string> = {};
@@ -89,7 +93,6 @@ export default async function DashboardPage() {
     }
   }
 
-  // แปลง zoneByUni → array เรียงตาม uni ที่มีออเดอร์เยอะสุด
   const topZonesByUni = Object.entries(zoneByUni).map(([uniId, zones]) => ({
     uniId,
     uniName: uniMap[uniId] || uniId,
@@ -100,7 +103,6 @@ export default async function DashboardPage() {
     return totalB - totalA;
   });
 
-  // แปลง itemByUni → array
   const topItemsByUni = Object.entries(itemByUni).map(([uniId, items]) => ({
     uniId,
     uniName: uniMap[uniId] || uniId,
