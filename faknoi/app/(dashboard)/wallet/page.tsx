@@ -264,7 +264,7 @@ export default function WalletPage() {
       )}
 
       {/* Payment Section */}
-      {hasFee && !isAdmin && (
+      {hasFee && (
         <>
           <div className="card border-2 border-brand-yellow/40 bg-brand-yellow/5">
             <div className="flex items-start gap-3">
