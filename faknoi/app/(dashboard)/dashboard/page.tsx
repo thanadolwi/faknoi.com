@@ -2,7 +2,7 @@
 import I18nDashboard from "@/components/I18nDashboard";
 import { UNIVERSITIES } from "@/lib/universities";
 
-export const revalidate = 0;
+export const revalidate = 30;
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -24,7 +24,7 @@ export default async function DashboardPage() {
     supabase.from("orders").select("*, trips(origin_zone, destination_zone, shopper_id, profiles(username)), profiles(username)").eq("buyer_id", user?.id).not("status", "in", '("completed","cancelled")').order("created_at", { ascending: false }),
     supabase.from("trips").select("id").eq("shopper_id", user?.id),
     adminSupabase.from("orders").select("items, trips(origin_zone, destination_zone, university_id)").gte("created_at", since).not("status", "eq", "cancelled"),
-    adminSupabase.from("trips").select("created_at").gte("created_at", since),
+    adminSupabase.from("trips").select("created_at, university_id").gte("created_at", since),
   ]);
 
   const trips = (allTrips || []).filter((t: any) => t.current_orders < t.max_orders).slice(0, 3);
@@ -69,25 +69,29 @@ export default async function DashboardPage() {
     }
   }
 
-  const hourCount: Record<number, number> = {};
+  const hourByUni: Record<string, Record<number, number>> = {};
   for (const trip of recentTrips || []) {
     const h = new Date(trip.created_at).getHours();
-    hourCount[h] = (hourCount[h] || 0) + 1;
+    const uniId = (trip as any).university_id || "other";
+    if (!hourByUni[uniId]) hourByUni[uniId] = {};
+    hourByUni[uniId][h] = (hourByUni[uniId][h] || 0) + 1;
   }
 
   const topZonesByUni = Object.entries(zoneByUni).map(([uniId, zones]) => ({
-    uniId,
-    uniName: uniMap[uniId] || uniId,
+    uniId, uniName: uniMap[uniId] || uniId,
     zones: Object.entries(zones).sort((a, b) => b[1] - a[1]).slice(0, 4),
   })).sort((a, b) => b.zones.reduce((s, [, c]) => s + c, 0) - a.zones.reduce((s, [, c]) => s + c, 0));
 
   const topItemsByUni = Object.entries(itemByUni).map(([uniId, items]) => ({
-    uniId,
-    uniName: uniMap[uniId] || uniId,
+    uniId, uniName: uniMap[uniId] || uniId,
     items: Object.entries(items).sort((a, b) => b[1] - a[1]).slice(0, 5),
   })).sort((a, b) => b.items.reduce((s, [, c]) => s + c, 0) - a.items.reduce((s, [, c]) => s + c, 0));
 
-  const topHours = Object.entries(hourCount).sort((a, b) => Number(b[1]) - Number(a[1])).slice(0, 3).map(([h, c]) => ({ hour: parseInt(h), count: c }));
+  const topHoursByUni = Object.entries(hourByUni).map(([uniId, hours]) => ({
+    uniId, uniName: uniMap[uniId] || uniId,
+    hours: Object.entries(hours).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([h, c]) => ({ hour: parseInt(h), count: c })),
+  })).sort((a, b) => b.hours.reduce((s, h) => s + h.count, 0) - a.hours.reduce((s, h) => s + h.count, 0));
+
   const topShops = Object.entries(shopCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const totalRecent = (recentOrders || []).length;
 
@@ -98,7 +102,7 @@ export default async function DashboardPage() {
       orders={orders || []}
       allActiveOrders={allActiveOrders}
       currentUserId={user?.id || ""}
-      insights={{ topZonesByUni, topItemsByUni, topHours, topShops, totalRecent }}
+      insights={{ topZonesByUni, topItemsByUni, topHoursByUni, topShops, totalRecent }}
     />
   );
 }
