@@ -12,16 +12,22 @@ export default function UniversityFilter() {
   const searchParams = useSearchParams();
   const { lang } = useLang();
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const selectedUni = searchParams.get("uni") || "";
   const selectedZone = searchParams.get("zone") || "";
   const university = UNIVERSITIES.find((u) => u.id === selectedUni);
+  const filteredUnis = UNIVERSITIES.filter((u) =>
+    u.name.toLowerCase().includes(search.toLowerCase()) ||
+    u.shortName.toLowerCase().includes(search.toLowerCase())
+  );
 
   function selectUni(id: string) {
     const params = new URLSearchParams();
     if (id) params.set("uni", id);
     router.push(`/trips?${params.toString()}`);
     setOpen(false);
+    setSearch("");
   }
 
   function selectZone(zone: string) {
@@ -56,15 +62,30 @@ export default function UniversityFilter() {
 
         {open && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
-            {UNIVERSITIES.map((uni) => (
-              <button key={uni.id} onClick={() => selectUni(uni.id)}
-                className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${
-                  selectedUni === uni.id ? "bg-brand-blue/5 text-brand-blue font-medium" : "text-gray-700"
-                }`}>
-                <p className="font-medium">{uni.name}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{uni.zones.length} {t(lang, "uf_zones")}</p>
-              </button>
-            ))}
+            <div className="p-2 border-b border-gray-100">
+              <input
+                type="text"
+                autoFocus
+                className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-brand-blue/50"
+                placeholder="ค้นหามหาวิทยาลัย..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+            <div className="max-h-52 overflow-y-auto">
+              {filteredUnis.length > 0 ? filteredUnis.map((uni) => (
+                <button key={uni.id} onClick={() => { selectUni(uni.id); setSearch(""); }}
+                  className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${
+                    selectedUni === uni.id ? "bg-brand-blue/5 text-brand-blue font-medium" : "text-gray-700"
+                  }`}>
+                  <p className="font-medium">{uni.name}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{uni.zones.length} {t(lang, "uf_zones")}</p>
+                </button>
+              )) : (
+                <p className="text-sm text-gray-400 text-center py-4">ไม่พบมหาวิทยาลัย</p>
+              )}
+            </div>
           </div>
         )}
       </div>
