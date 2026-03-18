@@ -1,43 +1,25 @@
 ﻿import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
 import I18nDashboard from "@/components/I18nDashboard";
 import { UNIVERSITIES } from "@/lib/universities";
 
 export const revalidate = 30;
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
+async function fetchInsights() {
   const adminSupabase = createAdminClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const username = user?.user_metadata?.username || user?.email?.split("@")[0] || "ผู้ใช้";
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  const [
-    { data: allTrips },
-    { data: orders },
-    { data: buyerActiveOrders },
-    { data: shopperTrips },
-    { data: recentOrders },
-    { data: recentTrips },
-  ] = await Promise.all([
-    adminSupabase.from("trips").select("*, profiles(username)").eq("status", "open").gt("cutoff_time", new Date().toISOString()).order("created_at", { ascending: false }).limit(10),
-    supabase.from("orders").select("*, trips(origin_zone, destination_zone)").eq("buyer_id", user?.id).order("created_at", { ascending: false }).limit(3),
-    supabase.from("orders").select("*, trips(origin_zone, destination_zone, shopper_id, profiles(username)), profiles(username)").eq("buyer_id", user?.id).not("status", "in", '("completed","cancelled")').order("created_at", { ascending: false }),
-    supabase.from("trips").select("id").eq("shopper_id", user?.id),
-    adminSupabase.from("orders").select("items, trips(origin_zone, destination_zone, university_id)").gte("created_at", since).not("status", "eq", "cancelled"),
-    adminSupabase.from("trips").select("created_at, university_id").gte("created_at", since),
+  const [{ data: recentOrders }, { data: recentTrips }] = await Promise.all([
+    adminSupabase
+      .from("orders")
+      .select("items, trips(origin_zone, university_id)")
+      .gte("created_at", since)
+      .not("status", "eq", "cancelled"),
+    adminSupabase
+      .from("trips")
+      .select("created_at, university_id")
+      .gte("created_at", since),
   ]);
-
-  const trips = (allTrips || []).filter((t: any) => t.current_orders < t.max_orders).slice(0, 3);
-  const shopperTripIds = (shopperTrips || []).map((t: any) => t.id);
-
-  const { data: shopperActiveOrders } = shopperTripIds.length > 0
-    ? await supabase.from("orders").select("*, trips(origin_zone, destination_zone, shopper_id, profiles(username)), profiles(username)").in("trip_id", shopperTripIds).not("status", "in", '("completed","cancelled")').order("created_at", { ascending: false })
-    : { data: [] };
-
-  const allActiveOrders = [
-    ...(buyerActiveOrders || []),
-    ...(shopperActiveOrders || []).filter((o: any) => !(buyerActiveOrders || []).find((b: any) => b.id === o.id)),
-  ];
 
   const uniMap: Record<string, string> = {};
   for (const u of UNIVERSITIES) uniMap[u.id] = u.shortName;
@@ -95,6 +77,64 @@ export default async function DashboardPage() {
   const topShops = Object.entries(shopCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const totalRecent = (recentOrders || []).length;
 
+  return { topZonesByUni, topItemsByUni, topHoursByUni, topShops, totalRecent };
+}
+
+const getCachedInsights = unstable_cache(fetchInsights, ["insights"], { revalidate: 30 });
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const username = user?.user_metadata?.username || user?.email?.split("@")[0] || "ผู้ใช้";
+
+  const [
+    { data: allTrips },
+    { data: orders },
+    { data: buyerActiveOrders },
+    { data: shopperTrips },
+    insights,
+  ] = await Promise.all([
+    adminSupabase
+      .from("trips")
+      .select("id, origin_zone, destination_zone, cutoff_time, current_orders, max_orders, profiles(username)")
+      .eq("status", "open")
+      .gt("cutoff_time", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(10),
+    supabase
+      .from("orders")
+      .select("id, status, created_at, trips(origin_zone, destination_zone)")
+      .eq("buyer_id", user?.id)
+      .order("created_at", { ascending: false })
+      .limit(3),
+    supabase
+      .from("orders")
+      .select("id, status, created_at, trip_id, trips(origin_zone, destination_zone, shopper_id, profiles(username)), profiles(username)")
+      .eq("buyer_id", user?.id)
+      .not("status", "in", '("completed","cancelled")')
+      .order("created_at", { ascending: false }),
+    supabase.from("trips").select("id").eq("shopper_id", user?.id),
+    getCachedInsights(),
+  ]);
+
+  const trips = (allTrips || []).filter((t: any) => t.current_orders < t.max_orders).slice(0, 3);
+  const shopperTripIds = (shopperTrips || []).map((t: any) => t.id);
+
+  const { data: shopperActiveOrders } = shopperTripIds.length > 0
+    ? await supabase
+        .from("orders")
+        .select("id, status, created_at, trip_id, trips(origin_zone, destination_zone, shopper_id, profiles(username)), profiles(username)")
+        .in("trip_id", shopperTripIds)
+        .not("status", "in", '("completed","cancelled")')
+        .order("created_at", { ascending: false })
+    : { data: [] };
+
+  const allActiveOrders = [
+    ...(buyerActiveOrders || []),
+    ...(shopperActiveOrders || []).filter((o: any) => !(buyerActiveOrders || []).find((b: any) => b.id === o.id)),
+  ];
+
   return (
     <I18nDashboard
       username={username}
@@ -102,7 +142,7 @@ export default async function DashboardPage() {
       orders={orders || []}
       allActiveOrders={allActiveOrders}
       currentUserId={user?.id || ""}
-      insights={{ topZonesByUni, topItemsByUni, topHoursByUni, topShops, totalRecent }}
+      insights={insights}
     />
   );
 }
