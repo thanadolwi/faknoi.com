@@ -72,9 +72,8 @@ export default async function DashboardPage() {
 
   const zoneByUni: Record<string, Record<string, number>> = {};
   const itemByUni: Record<string, Record<string, number>> = {};
-  const shopCount: Record<string, number> = {};
+  const shopByUni: Record<string, Record<string, number>> = {};
 
-  // โซนฮิต: นับจาก trips ด้วย ทำให้ขึ้นทันทีที่มีทริปใหม่
   for (const trip of recentTrips || []) {
     const zone = (trip as any).origin_zone;
     const uniId = (trip as any).university_id || "other";
@@ -84,17 +83,16 @@ export default async function DashboardPage() {
     }
   }
 
-  // เมนูฮิต/ร้านฮิต/โซนฮิตเพิ่มเติม: นับจาก orders
   for (const order of recentOrders || []) {
-    const trip = order.trips as any;
+    const trip = (order as any).trips as any;
     const zone = trip?.origin_zone;
     const uniId = trip?.university_id || "other";
     if (zone) {
       if (!zoneByUni[uniId]) zoneByUni[uniId] = {};
       zoneByUni[uniId][zone] = (zoneByUni[uniId][zone] || 0) + 1;
     }
-    if (Array.isArray(order.items)) {
-      for (const item of order.items as any[]) {
+    if (Array.isArray((order as any).items)) {
+      for (const item of (order as any).items as any[]) {
         if (item.item_name) {
           const k = item.item_name.trim().toLowerCase();
           if (!itemByUni[uniId]) itemByUni[uniId] = {};
@@ -102,7 +100,8 @@ export default async function DashboardPage() {
         }
         if (item.shop_name) {
           const k = item.shop_name.trim().toLowerCase();
-          shopCount[k] = (shopCount[k] || 0) + 1;
+          if (!shopByUni[uniId]) shopByUni[uniId] = {};
+          shopByUni[uniId][k] = (shopByUni[uniId][k] || 0) + 1;
         }
       }
     }
@@ -131,7 +130,11 @@ export default async function DashboardPage() {
     hours: Object.entries(hours).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([h, c]) => ({ hour: parseInt(h), count: c })),
   })).sort((a, b) => b.hours.reduce((s, h) => s + h.count, 0) - a.hours.reduce((s, h) => s + h.count, 0));
 
-  const topShops = Object.entries(shopCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topShopsByUni = Object.entries(shopByUni).map(([uniId, shops]) => ({
+    uniId, uniName: uniMap[uniId] || uniId,
+    shops: Object.entries(shops).sort((a, b) => b[1] - a[1]).slice(0, 5),
+  })).sort((a, b) => b.shops.reduce((s, [, c]) => s + c, 0) - a.shops.reduce((s, [, c]) => s + c, 0));
+
   const totalRecent = (recentOrders || []).length + (recentTrips || []).length;
 
   return (
@@ -141,7 +144,7 @@ export default async function DashboardPage() {
       orders={orders || []}
       allActiveOrders={allActiveOrders}
       currentUserId={user?.id || ""}
-      insights={{ topZonesByUni, topItemsByUni, topHoursByUni, topShops, totalRecent }}
+      insights={{ topZonesByUni, topItemsByUni, topHoursByUni, topShopsByUni, totalRecent }}
     />
   );
 }
