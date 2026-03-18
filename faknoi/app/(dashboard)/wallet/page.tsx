@@ -75,6 +75,7 @@ export default function WalletPage() {
       if (adminMode) {
         const res = await fetch("/api/admin/slips");
         const json = await res.json();
+        console.log("admin slips response:", json);
         setAllSlips(json.slips || []);
       }
 
