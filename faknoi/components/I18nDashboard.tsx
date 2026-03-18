@@ -20,10 +20,16 @@ interface ItemByUni {
   items: [string, number][];
 }
 
+interface HourByUni {
+  uniId: string;
+  uniName: string;
+  hours: { hour: number; count: number }[];
+}
+
 interface Insights {
   topZonesByUni: ZoneByUni[];
   topItemsByUni: ItemByUni[];
-  topHours: { hour: number; count: number }[];
+  topHoursByUni: HourByUni[];
   topShops: [string, number][];
   totalRecent: number;
 }
@@ -259,27 +265,46 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
             );
           })()}
 
-          {/* Peak Hours */}
-          {insights.topHours.length > 0 && (
-            <div className="card p-4 space-y-2.5">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Clock className="w-3.5 h-3.5 text-brand-cyan" />
-                <span className="text-xs font-black text-brand-navy">ช่วงเวลาฮิต</span>
-              </div>
-              {insights.topHours.map(({ hour, count }, i) => (
-                <div key={hour} className="flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 ${
-                    i === 0 ? "bg-brand-blue text-white" : i === 1 ? "bg-brand-cyan/20 text-brand-navy" : "bg-gray-100 text-gray-500"
-                  }`}>{hour}</div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold text-brand-navy">{HourLabel(hour)}</p>
-                    <p className="text-xs text-gray-400">{count} ออเดอร์</p>
-                  </div>
-                  {i === 0 && <Flame className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />}
+          {/* Peak Hours by Uni */}
+          {(() => {
+            const filtered = selectedUni === "all"
+              ? insights.topHoursByUni
+              : insights.topHoursByUni.filter((u) => u.uniId === selectedUni);
+            if (!filtered.length) return null;
+            return (
+              <div className="card p-4 space-y-4">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-brand-cyan" />
+                  <span className="text-xs font-black text-brand-navy">ช่วงเวลาฮิต</span>
+                  <span className="ml-auto text-xs text-gray-400">7 วันล่าสุด</span>
                 </div>
-              ))}
-            </div>
-          )}
+                {filtered.map((uni, uniIdx) => {
+                  const color = UNI_COLORS[uniIdx % UNI_COLORS.length];
+                  return (
+                    <div key={uni.uniId} className="space-y-2">
+                      {selectedUni === "all" && (
+                        <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
+                          {getUniShortNameById(uni.uniId, lang)}
+                        </span>
+                      )}
+                      {uni.hours.map(({ hour, count }, i) => (
+                        <div key={hour} className="flex items-center gap-2 pl-2">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 ${
+                            i === 0 ? "bg-brand-blue text-white" : i === 1 ? "bg-brand-cyan/20 text-brand-navy" : "bg-gray-100 text-gray-500"
+                          }`}>{hour}</div>
+                          <div className="flex-1">
+                            <p className="text-xs font-bold text-brand-navy">{HourLabel(hour)}</p>
+                            <p className="text-xs text-gray-400">{count} ทริป</p>
+                          </div>
+                          {i === 0 && <Flame className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* Top Items by University */}
           {(() => {

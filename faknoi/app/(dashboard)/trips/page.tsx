@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import I18nTrips from "@/components/I18nTrips";
 
-export const revalidate = 0;
+export const revalidate = 30;
 
 export default async function TripsPage({
   searchParams,

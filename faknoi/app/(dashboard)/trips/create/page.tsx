@@ -56,6 +56,8 @@ export default function CreateTripPage() {
   const router = useRouter();
   const { lang } = useLang();
   const [selectedUniId, setSelectedUniId] = useState("");
+  const [uniSearch, setUniSearch] = useState("");
+  const [showUniDropdown, setShowUniDropdown] = useState(false);
   const [form, setForm] = useState({
     origin_zone: "", destination_zone: "", cutoff_time: "",
     max_orders: 5, fee_per_item: 5, payment_info: "", note: "",
@@ -64,6 +66,10 @@ export default function CreateTripPage() {
   const [error, setError] = useState("");
 
   const selectedUni = UNIVERSITIES.find((u) => u.id === selectedUniId);
+  const filteredUnis = UNIVERSITIES.filter((u) =>
+    u.name.toLowerCase().includes(uniSearch.toLowerCase()) ||
+    u.shortName.toLowerCase().includes(uniSearch.toLowerCase())
+  );
 
   function update(field: string, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -111,13 +117,30 @@ export default function CreateTripPage() {
             <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5 block">
               <GraduationCap className="w-3.5 h-3.5 text-brand-blue" />{t(lang, "ct_university")}
             </label>
-            <select className="input-field" value={selectedUniId}
-              onChange={(e) => { setSelectedUniId(e.target.value); update("origin_zone", ""); update("destination_zone", ""); }} required>
-              <option value="">{t(lang, "ct_select_uni")}</option>
-              {UNIVERSITIES.map((uni) => (
-                <option key={uni.id} value={uni.id}>{uni.name}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <input
+                type="text"
+                className="input-field"
+                placeholder={t(lang, "ct_select_uni")}
+                value={selectedUniId ? (UNIVERSITIES.find(u => u.id === selectedUniId)?.name || uniSearch) : uniSearch}
+                onChange={(e) => { setUniSearch(e.target.value); setSelectedUniId(""); setShowUniDropdown(true); update("origin_zone", ""); update("destination_zone", ""); }}
+                onFocus={() => setShowUniDropdown(true)}
+                onBlur={() => setTimeout(() => setShowUniDropdown(false), 150)}
+                required={!selectedUniId}
+              />
+              {showUniDropdown && filteredUnis.length > 0 && (
+                <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg max-h-52 overflow-y-auto">
+                  {filteredUnis.map((uni) => (
+                    <button key={uni.id} type="button"
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-brand-blue/5 transition-colors first:rounded-t-2xl last:rounded-b-2xl ${selectedUniId === uni.id ? "bg-brand-blue/10 font-bold text-brand-blue" : "text-gray-700"}`}
+                      onMouseDown={() => { setSelectedUniId(uni.id); setUniSearch(""); setShowUniDropdown(false); update("origin_zone", ""); update("destination_zone", ""); }}>
+                      <span className="font-semibold">{uni.shortName}</span>
+                      <span className="text-gray-400 ml-2 text-xs">{uni.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           {selectedUni && (
             <div className="grid grid-cols-2 gap-3">
