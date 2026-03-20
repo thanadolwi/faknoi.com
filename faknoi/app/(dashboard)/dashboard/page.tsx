@@ -135,7 +135,7 @@ export default async function DashboardPage() {
     shops: Object.entries(shops).sort((a, b) => b[1] - a[1]).slice(0, 5),
   })).sort((a, b) => b.shops.reduce((s, [, c]) => s + c, 0) - a.shops.reduce((s, [, c]) => s + c, 0));
 
-  const totalRecent = (recentOrders || []).length + (recentTrips || []).length;
+  const totalRecent = (recentOrders || []).length;
 
   return (
     <I18nDashboard
