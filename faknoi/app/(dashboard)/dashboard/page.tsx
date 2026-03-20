@@ -17,7 +17,6 @@ export default async function DashboardPage() {
     { data: buyerActiveOrders },
     { data: shopperTrips },
     { data: recentOrders },
-    { data: recentTrips },
   ] = await Promise.all([
     adminSupabase
       .from("trips")
@@ -41,13 +40,9 @@ export default async function DashboardPage() {
     supabase.from("trips").select("id").eq("shopper_id", user?.id),
     adminSupabase
       .from("orders")
-      .select("items, trips(origin_zone, university_id)")
+      .select("created_at, items, trips(origin_zone, university_id)")
       .gte("created_at", since)
       .not("status", "eq", "cancelled"),
-    adminSupabase
-      .from("trips")
-      .select("created_at, origin_zone, university_id")
-      .gte("created_at", since),
   ]);
 
   const trips = (allTrips || []).filter((t: any) => t.current_orders < t.max_orders).slice(0, 3);
@@ -73,24 +68,25 @@ export default async function DashboardPage() {
   const zoneByUni: Record<string, Record<string, number>> = {};
   const itemByUni: Record<string, Record<string, number>> = {};
   const shopByUni: Record<string, Record<string, number>> = {};
-
-  for (const trip of recentTrips || []) {
-    const zone = (trip as any).origin_zone;
-    const uniId = (trip as any).university_id || "other";
-    if (zone) {
-      if (!zoneByUni[uniId]) zoneByUni[uniId] = {};
-      zoneByUni[uniId][zone] = (zoneByUni[uniId][zone] || 0) + 1;
-    }
-  }
+  const hourByUni: Record<string, Record<number, number>> = {};
 
   for (const order of recentOrders || []) {
     const trip = (order as any).trips as any;
     const zone = trip?.origin_zone;
     const uniId = trip?.university_id || "other";
+
+    // โซนฮิต
     if (zone) {
       if (!zoneByUni[uniId]) zoneByUni[uniId] = {};
       zoneByUni[uniId][zone] = (zoneByUni[uniId][zone] || 0) + 1;
     }
+
+    // ช่วงเวลาฮิต — นับจาก created_at ของ order
+    const h = new Date(new Date((order as any).created_at).getTime() + 7 * 60 * 60 * 1000).getUTCHours();
+    if (!hourByUni[uniId]) hourByUni[uniId] = {};
+    hourByUni[uniId][h] = (hourByUni[uniId][h] || 0) + 1;
+
+    // เมนูฮิต / ร้านฮิต
     if (Array.isArray((order as any).items)) {
       for (const item of (order as any).items as any[]) {
         if (item.item_name) {
@@ -105,14 +101,6 @@ export default async function DashboardPage() {
         }
       }
     }
-  }
-
-  const hourByUni: Record<string, Record<number, number>> = {};
-  for (const trip of recentTrips || []) {
-    const h = new Date(new Date(trip.created_at).getTime() + 7 * 60 * 60 * 1000).getUTCHours();
-    const uniId = (trip as any).university_id || "other";
-    if (!hourByUni[uniId]) hourByUni[uniId] = {};
-    hourByUni[uniId][h] = (hourByUni[uniId][h] || 0) + 1;
   }
 
   const topZonesByUni = Object.entries(zoneByUni).map(([uniId, zones]) => ({
