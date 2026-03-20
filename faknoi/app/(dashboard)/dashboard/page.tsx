@@ -40,7 +40,7 @@ export default async function DashboardPage() {
     supabase.from("trips").select("id").eq("shopper_id", user?.id),
     adminSupabase
       .from("orders")
-      .select("created_at, items, trips(origin_zone, university_id)")
+      .select("items, trips(origin_zone, university_id, cutoff_time)")
       .gte("created_at", since)
       .not("status", "eq", "cancelled"),
   ]);
@@ -81,20 +81,22 @@ export default async function DashboardPage() {
       zoneByUni[uniId][zone] = (zoneByUni[uniId][zone] || 0) + 1;
     }
 
-    // ช่วงเวลาฮิต — นับจาก created_at ของ order
-    const h = new Date(new Date((order as any).created_at).getTime() + 7 * 60 * 60 * 1000).getUTCHours();
-    if (!hourByUni[uniId]) hourByUni[uniId] = {};
-    hourByUni[uniId][h] = (hourByUni[uniId][h] || 0) + 1;
+    // ช่วงเวลาฮิต — อิงจาก cutoff_time ของทริปที่ผูกกับ order
+    if (trip?.cutoff_time) {
+      const h = new Date(new Date(trip.cutoff_time).getTime() + 7 * 60 * 60 * 1000).getUTCHours();
+      if (!hourByUni[uniId]) hourByUni[uniId] = {};
+      hourByUni[uniId][h] = (hourByUni[uniId][h] || 0) + 1;
+    }
 
-    // เมนูฮิต / ร้านฮิต
+    // เมนูฮิต / ร้านฮิต — นับทุก item ใน array
     if (Array.isArray((order as any).items)) {
       for (const item of (order as any).items as any[]) {
-        if (item.item_name) {
+        if (item.item_name && item.item_name.trim()) {
           const k = item.item_name.trim().toLowerCase();
           if (!itemByUni[uniId]) itemByUni[uniId] = {};
-          itemByUni[uniId][k] = (itemByUni[uniId][k] || 0) + 1;
+          itemByUni[uniId][k] = (itemByUni[uniId][k] || 0) + (item.quantity || 1);
         }
-        if (item.shop_name) {
+        if (item.shop_name && item.shop_name.trim()) {
           const k = item.shop_name.trim().toLowerCase();
           if (!shopByUni[uniId]) shopByUni[uniId] = {};
           shopByUni[uniId][k] = (shopByUni[uniId][k] || 0) + 1;
