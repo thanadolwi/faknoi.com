@@ -13,9 +13,10 @@ interface Props {
   maxOrders: number;
   currentOrders: number;
   note?: string;
+  estimatedDeliveryTime?: string;
 }
 
-export default function EditTripForm({ tripId, cutoffTime, maxOrders, currentOrders, note }: Props) {
+export default function EditTripForm({ tripId, cutoffTime, maxOrders, currentOrders, note, estimatedDeliveryTime }: Props) {
   const router = useRouter();
   const { lang } = useLang();
   const [open, setOpen] = useState(false);
@@ -32,6 +33,7 @@ export default function EditTripForm({ tripId, cutoffTime, maxOrders, currentOrd
     cutoff_time: toLocalInput(cutoffTime),
     max_orders: maxOrders,
     note: note || "",
+    estimated_delivery_time: estimatedDeliveryTime ? toLocalInput(estimatedDeliveryTime) : "",
   });
 
   function update(field: string, value: string | number) {
@@ -50,6 +52,7 @@ export default function EditTripForm({ tripId, cutoffTime, maxOrders, currentOrd
       cutoff_time: new Date(form.cutoff_time).toISOString(),
       max_orders: form.max_orders,
       note: form.note || null,
+      estimated_delivery_time: form.estimated_delivery_time ? new Date(form.estimated_delivery_time).toISOString() : null,
     }).eq("id", tripId);
 
     if (updateError) { setError(t(lang, "et_err_generic")); setLoading(false); return; }
@@ -91,6 +94,14 @@ export default function EditTripForm({ tripId, cutoffTime, maxOrders, currentOrd
         </label>
         <input type="number" className="input-field text-sm" min={currentOrders} max={30}
           value={form.max_orders} onChange={(e) => update("max_orders", parseInt(e.target.value))} />
+      </div>
+
+      <div>
+        <label className="text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1.5 block">
+          <Clock className="w-3.5 h-3.5 text-brand-cyan" />{t(lang, "et_est_delivery")}
+        </label>
+        <input type="datetime-local" className="input-field text-sm" value={form.estimated_delivery_time}
+          onChange={(e) => update("estimated_delivery_time", e.target.value)} />
       </div>
 
       <div>

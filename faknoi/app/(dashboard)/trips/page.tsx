@@ -13,7 +13,7 @@ export default async function TripsPage({
 
   let query = supabase
     .from("trips")
-    .select("id, origin_zone, destination_zone, cutoff_time, current_orders, max_orders, university_id, status, profiles(username)")
+    .select("id, origin_zone, destination_zone, cutoff_time, current_orders, max_orders, university_id, status, destination_lat, destination_lng, estimated_delivery_time, profiles(username)")
     .in("status", ["open", "shopping"])
     .gt("cutoff_time", new Date().toISOString())
     .order("cutoff_time", { ascending: true });

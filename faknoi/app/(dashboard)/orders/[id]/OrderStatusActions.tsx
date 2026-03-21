@@ -19,6 +19,7 @@ interface Props {
 }
 
 const MAX_FILE_SIZE = 500 * 1024;
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
 
 export default function OrderStatusActions({
   orderId, tripId, currentStatus, isBuyer, isShopper, finalPrice, paymentConfirmed,
@@ -34,6 +35,11 @@ export default function OrderStatusActions({
   const [slipPreview, setSlipPreview] = useState<string | null>(null);
   const [slipError, setSlipError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Purchase photo state
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState("");
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const { lang } = useLang();
 
   async function updateOrder(updates: Record<string, unknown>) {
@@ -64,8 +70,32 @@ export default function OrderStatusActions({
 
   async function submitFinalPrice() {
     if (!price) return;
-    await updateOrder({ status: "bought", final_price: parseFloat(price), adjustment_reason: reason || null });
+    if (!photoFile) { setPhotoError(t(lang, "osa_photo_required")); return; }
+    setLoading(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    // Upload purchase photo
+    const ext = photoFile.name.split(".").pop();
+    const photoPath = `purchase/${user!.id}/${orderId}.${ext}`;
+    const { error: photoUploadErr } = await supabase.storage.from("payment-slips").upload(photoPath, photoFile, { upsert: true });
+    if (photoUploadErr) {
+      alert(t(lang, "w_upload_fail") + ": " + photoUploadErr.message);
+      setLoading(false);
+      return;
+    }
+    const { data: { publicUrl: photoUrl } } = supabase.storage.from("payment-slips").getPublicUrl(photoPath);
+    await updateOrder({ status: "bought", final_price: parseFloat(price), adjustment_reason: reason || null, purchase_photo_url: photoUrl });
     setShowPriceForm(false);
+  }
+
+  function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    setPhotoError("");
+    if (!file) return;
+    if (file.size > MAX_PHOTO_SIZE) { setPhotoError(t(lang, "osa_photo_size_err")); return; }
+    if (!file.type.startsWith("image/")) { setPhotoError(t(lang, "w_file_type")); return; }
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
   }
 
   function handleSlipSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -155,14 +185,59 @@ export default function OrderStatusActions({
           ) : (
             <div className="card space-y-3 border-brand-yellow/40">
               <p className="text-sm font-semibold text-brand-navy">{t(lang, "osa_final_price_title")}</p>
-              <input type="number" className="input-field" placeholder={t(lang, "osa_price_placeholder")} value={price}
-                onChange={(e) => setPrice(e.target.value)} />
+              <input
+                type="number"
+                className={`input-field ${!price ? "border-red-300" : ""}`}
+                placeholder={t(lang, "osa_price_placeholder")}
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                required
+              />
+              {!price && <p className="text-xs text-red-500">{t(lang, "osa_price_required")}</p>}
               <input type="text" className="input-field" placeholder={t(lang, "osa_reason_placeholder")} value={reason}
                 onChange={(e) => setReason(e.target.value)} />
+
+              {/* Purchase photo — required */}
+              <div>
+                <p className="text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-brand-blue" />{t(lang, "osa_photo_required")}
+                </p>
+                <div
+                  onClick={() => photoInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer transition-colors ${
+                    photoPreview ? "border-brand-blue/40 bg-brand-blue/5" : "border-red-200 hover:border-brand-blue/40 hover:bg-brand-blue/5"
+                  }`}
+                >
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="purchase" className="max-h-40 rounded-lg object-contain" />
+                  ) : (
+                    <>
+                      <ImageIcon className="w-8 h-8 text-gray-300" />
+                      <p className="text-xs text-gray-400 text-center">{t(lang, "osa_photo_hint")}</p>
+                    </>
+                  )}
+                </div>
+                <input ref={photoInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoSelect} />
+                {photoPreview && (
+                  <button type="button" onClick={() => photoInputRef.current?.click()}
+                    className="mt-1.5 text-xs text-brand-blue hover:underline flex items-center gap-1">
+                    <ImageIcon className="w-3 h-3" />{t(lang, "osa_photo_retake")}
+                  </button>
+                )}
+                {photoError && (
+                  <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5" />{photoError}
+                  </p>
+                )}
+              </div>
+
               <div className="flex gap-2">
-                <button onClick={submitFinalPrice} disabled={loading || !price}
-                  className="btn-primary flex-1 text-sm py-2">{t(lang, "osa_confirm")}</button>
-                <button onClick={() => setShowPriceForm(false)}
+                <button onClick={submitFinalPrice} disabled={loading || !price || !photoFile}
+                  className="btn-primary flex-1 text-sm py-2 flex items-center justify-center gap-2">
+                  {loading && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                  {loading ? t(lang, "osa_photo_uploading") : t(lang, "osa_confirm")}
+                </button>
+                <button onClick={() => { setShowPriceForm(false); setPhotoFile(null); setPhotoPreview(null); setPhotoError(""); }}
                   className="flex-1 text-sm py-2 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">{t(lang, "osa_cancel")}</button>
               </div>
             </div>

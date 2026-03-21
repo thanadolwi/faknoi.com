@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Plus, MapPin, ArrowRight, Users, GraduationCap } from "lucide-react";
+import { Plus, MapPin, ArrowRight, Users, GraduationCap, Clock } from "lucide-react";
 import CountdownTimer from "./CountdownTimer";
 import UniversityFilter from "./UniversityFilter";
+import NearbyTrips from "./NearbyTrips";
 import { UNIVERSITIES } from "@/lib/universities";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
@@ -15,6 +17,7 @@ interface Props {
 
 export default function I18nTrips({ trips, zone }: Props) {
   const { lang } = useLang();
+  const [sortedTrips, setSortedTrips] = useState<any[]>(trips);
 
   return (
     <div className="space-y-5">
@@ -31,9 +34,12 @@ export default function I18nTrips({ trips, zone }: Props) {
 
       <UniversityFilter />
 
-      {trips.length > 0 ? (
+      {/* Current location + sort by distance */}
+      <NearbyTrips trips={trips} onSorted={setSortedTrips} />
+
+      {sortedTrips.length > 0 ? (
         <div className="space-y-3">
-          {trips.map((trip: any) => (
+          {sortedTrips.map((trip: any) => (
             <Link key={trip.id} href={`/trips/${trip.id}`} className="card flex items-start justify-between hover:border-brand-blue/40 transition-all group">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
@@ -61,6 +67,12 @@ export default function I18nTrips({ trips, zone }: Props) {
                     {trip.current_orders}/{trip.max_orders} {t(lang,"trips_orders")}
                   </span>
                   <span>{t(lang,"trips_by")} {trip.profiles?.username}</span>
+                  {trip.estimated_delivery_time && (
+                    <span className="flex items-center gap-1 text-brand-cyan font-medium">
+                      <Clock className="w-3 h-3" />
+                      {t(lang,"trips_est_delivery")} {new Date(trip.estimated_delivery_time).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  )}
                 </div>
                 {trip.note && (
                   <p className="text-xs text-gray-400 mb-2 bg-gray-50 px-3 py-1.5 rounded-lg">{trip.note}</p>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Clock, TrendingUp, MapPin, ShoppingBag, Store, Flame, ChevronDown } from "lucide-react";
 import DashboardChats from "./DashboardChats";
+import NearbyTrips from "./NearbyTrips";
 import { getUniShortNameById, getZoneNameByThai } from "@/lib/universities";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
@@ -70,6 +71,7 @@ const UNI_COLORS = [
 export default function I18nDashboard({ username, trips, orders, allActiveOrders, currentUserId, insights }: Props) {
   const { lang } = useLang();
   const [selectedUni, setSelectedUni] = useState<string>("all");
+  const [sortedTrips, setSortedTrips] = useState<any[]>(trips);
   const statusLabel: Record<string, { label: string; color: string; emoji: string }> = {
     pending:    { label: t(lang,"status_pending"),    color: "bg-yellow-100 text-yellow-700",  emoji: "⏳" },
     accepted:   { label: t(lang,"status_accepted"),   color: "bg-blue-100 text-blue-700",      emoji: "✅" },
@@ -120,9 +122,13 @@ export default function I18nDashboard({ username, trips, orders, allActiveOrders
             {t(lang,"dash_see_all")} <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
-        {trips.length > 0 ? (
+        {/* Current location + sort by distance */}
+        <div className="mb-3">
+          <NearbyTrips trips={trips} onSorted={setSortedTrips} />
+        </div>
+        {sortedTrips.length > 0 ? (
           <div className="space-y-2.5">
-            {trips.map((trip: any) => (
+            {sortedTrips.map((trip: any) => (
               <Link key={trip.id} href={`/trips/${trip.id}`}
                 className="card flex items-center justify-between hover:border-brand-blue/30 hover:shadow-md active:scale-[0.99] transition-all duration-150 group">
                 <div>

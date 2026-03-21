@@ -103,3 +103,13 @@ create policy "orders_update" on public.orders for update
     auth.uid() = buyer_id or
     auth.uid() = (select shopper_id from public.trips where id = trip_id)
   );
+
+-- New columns for location pins, estimated delivery time, and purchase photo
+alter table public.trips add column if not exists origin_lat numeric(10,7);
+alter table public.trips add column if not exists origin_lng numeric(10,7);
+alter table public.trips add column if not exists destination_lat numeric(10,7);
+alter table public.trips add column if not exists destination_lng numeric(10,7);
+alter table public.trips add column if not exists estimated_delivery_time timestamptz;
+
+-- Column for purchase proof photo on orders
+alter table public.orders add column if not exists purchase_photo_url text;

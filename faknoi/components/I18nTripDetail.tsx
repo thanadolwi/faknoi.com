@@ -87,6 +87,7 @@ export default function I18nTripDetail({
                 maxOrders={trip.max_orders}
                 currentOrders={trip.current_orders}
                 note={trip.note}
+                estimatedDeliveryTime={trip.estimated_delivery_time}
               />
             )}
             <TripStatusActions tripId={trip.id} currentStatus={trip.status} />

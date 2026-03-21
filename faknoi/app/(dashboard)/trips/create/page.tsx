@@ -8,6 +8,9 @@ import Link from "next/link";
 import { UNIVERSITIES } from "@/lib/universities";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
+import LocationPicker from "@/components/LocationPicker";
+
+interface LatLng { lat: number; lng: number }
 
 function ZoneSelect({
   label, icon, value, zones, onChange, lang,
@@ -61,7 +64,10 @@ export default function CreateTripPage() {
   const [form, setForm] = useState({
     origin_zone: "", destination_zone: "", cutoff_time: "",
     max_orders: 5, fee_per_item: 5, payment_info: "", note: "",
+    estimated_delivery_time: "",
   });
+  const [originPin, setOriginPin] = useState<LatLng | null>(null);
+  const [destPin, setDestPin] = useState<LatLng | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [outstanding, setOutstanding] = useState<number | null>(null);
@@ -107,6 +113,9 @@ export default function CreateTripPage() {
       max_orders: form.max_orders, fee_per_item: form.fee_per_item,
       payment_info: form.payment_info || null, note: form.note || null,
       status: "open", current_orders: 0,
+      origin_lat: originPin?.lat ?? null, origin_lng: originPin?.lng ?? null,
+      destination_lat: destPin?.lat ?? null, destination_lng: destPin?.lng ?? null,
+      estimated_delivery_time: form.estimated_delivery_time ? new Date(form.estimated_delivery_time).toISOString() : null,
     });
     if (err) { setError(t(lang, "ct_err_generic")); setLoading(false); return; }
     router.push("/trips");
@@ -178,12 +187,25 @@ export default function CreateTripPage() {
             </div>
           </div>
           {selectedUni && (
-            <div className="grid grid-cols-2 gap-3">
-              <ZoneSelect label={t(lang, "ct_origin")} icon={<MapPin className="w-3.5 h-3.5 text-brand-blue" />}
-                value={form.origin_zone} zones={selectedUni.zones} onChange={(v) => update("origin_zone", v)} lang={lang} />
-              <ZoneSelect label={t(lang, "ct_destination")} icon={<MapPin className="w-3.5 h-3.5 text-brand-cyan" />}
-                value={form.destination_zone} zones={selectedUni.zones} onChange={(v) => update("destination_zone", v)} lang={lang} />
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <ZoneSelect label={t(lang, "ct_origin")} icon={<MapPin className="w-3.5 h-3.5 text-brand-blue" />}
+                  value={form.origin_zone} zones={selectedUni.zones} onChange={(v) => update("origin_zone", v)} lang={lang} />
+                <ZoneSelect label={t(lang, "ct_destination")} icon={<MapPin className="w-3.5 h-3.5 text-brand-cyan" />}
+                  value={form.destination_zone} zones={selectedUni.zones} onChange={(v) => update("destination_zone", v)} lang={lang} />
+              </div>
+              {/* Location pins */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1.5 block">📍 {t(lang, "lp_title_origin")}</label>
+                  <LocationPicker title={t(lang, "lp_title_origin")} value={originPin} onChange={setOriginPin} color="blue" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1.5 block">📍 {t(lang, "lp_title_dest")}</label>
+                  <LocationPicker title={t(lang, "lp_title_dest")} value={destPin} onChange={setDestPin} color="cyan" />
+                </div>
+              </div>
+            </>
           )}
         </div>
 
@@ -205,6 +227,14 @@ export default function CreateTripPage() {
               <input type="number" className="input-field" min={1} max={20} value={form.max_orders}
                 onChange={(e) => update("max_orders", parseInt(e.target.value))} required />
             </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5 block">
+              <Clock className="w-3.5 h-3.5 text-brand-cyan" />{t(lang, "ct_est_delivery")}
+            </label>
+            <input type="datetime-local" className="input-field" value={form.estimated_delivery_time}
+              onChange={(e) => update("estimated_delivery_time", e.target.value)} required />
+            <p className="text-xs text-gray-400 mt-1.5">{t(lang, "ct_est_delivery_hint")}</p>
           </div>
         </div>
 

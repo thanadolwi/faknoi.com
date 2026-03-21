@@ -20,7 +20,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     adminSupabase
       .from("trips")
-      .select("id, origin_zone, destination_zone, cutoff_time, current_orders, max_orders, profiles(username)")
+      .select("id, origin_zone, destination_zone, cutoff_time, current_orders, max_orders, destination_lat, destination_lng, estimated_delivery_time, profiles(username)")
       .eq("status", "open")
       .gt("cutoff_time", new Date().toISOString())
       .order("created_at", { ascending: false })
