@@ -244,3 +244,18 @@ alter table public.messages add column if not exists image_url text;
 -- insert into storage.buckets (id, name, public) values ('chat-images', 'chat-images', true);
 -- create policy "chat_images_select" on storage.objects for select using (bucket_id = 'chat-images');
 -- create policy "chat_images_insert" on storage.objects for insert with check (bucket_id = 'chat-images' and auth.role() = 'authenticated');
+
+-- Allow admin to update trips and orders (for realtime to work properly)
+-- Drop old restrictive policies and recreate with admin support
+drop policy if exists "trips_update" on public.trips;
+create policy "trips_update" on public.trips for update using (
+  auth.uid() = shopper_id or
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);
+
+drop policy if exists "orders_update" on public.orders;
+create policy "orders_update" on public.orders for update using (
+  auth.uid() = buyer_id or
+  auth.uid() = (select shopper_id from public.trips where id = trip_id) or
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);

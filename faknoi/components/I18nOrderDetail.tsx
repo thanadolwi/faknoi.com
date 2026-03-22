@@ -42,10 +42,13 @@ export default function I18nOrderDetail({
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${initialOrder.id}` },
         (payload) => {
+          console.log("[realtime] order update:", payload.new);
           setOrder((prev: any) => ({ ...prev, ...payload.new }));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("[realtime] channel status:", status);
+      });
     return () => { supabase.removeChannel(channel); };
   }, [initialOrder.id]);
   const s = statusColorMap[order.status] || { labelKey: order.status, color: "text-gray-600", bg: "bg-gray-50 border-gray-200" };

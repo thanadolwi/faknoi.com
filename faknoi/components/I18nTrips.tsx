@@ -10,19 +10,59 @@ import NearbyTrips, { getTripDistanceLabel } from "./NearbyTrips";
 import { UNIVERSITIES } from "@/lib/universities";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
+import { createClient } from "@/lib/supabase/client";
 
 interface Props {
   trips: any[];
 }
 
-export default function I18nTrips({ trips }: Props) {
+export default function I18nTrips({ trips: initialTrips }: Props) {
   const { lang } = useLang();
   const searchParams = useSearchParams();
   const uni = searchParams.get("uni") || "";
   const zone = searchParams.get("zone") || "";
 
+  const [trips, setTrips] = useState<any[]>(initialTrips);
   const [sortedTrips, setSortedTrips] = useState<any[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Realtime: subscribe to trips table changes
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("trips-list-realtime")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "trips" },
+        (payload) => {
+          setTrips((prev) =>
+            prev.map((t) => (t.id === payload.new.id ? { ...t, ...payload.new } : t))
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "trips" },
+        async (payload) => {
+          // fetch full trip with profile
+          const { data } = await supabase
+            .from("trips")
+            .select("*, profiles(username)")
+            .eq("id", payload.new.id)
+            .single();
+          if (data) setTrips((prev) => [data, ...prev]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "trips" },
+        (payload) => {
+          setTrips((prev) => prev.filter((t) => t.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   // filter ฝั่ง client ตาม uni + zone
   const filteredTrips = useMemo(() => {
