@@ -104,16 +104,36 @@ export default function I18nDashboard({ username, trips: initialTrips, orders: i
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Realtime: orders (สถานะออเดอร์ล่าสุด)
+  // Realtime: orders (สถานะออเดอร์ล่าสุด + activeOrders สำหรับ DashboardChats)
   useEffect(() => {
     if (!currentUserId) return;
     const supabase = createClient();
     const channel = supabase
       .channel("dashboard-orders-realtime")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, (payload) => {
-        setOrders((prev) =>
-          prev.map((o) => o.id === payload.new.id ? { ...o, ...payload.new } : o)
-        );
+        const updated = payload.new;
+        setOrders((prev) => prev.map((o) => o.id === updated.id ? { ...o, ...updated } : o));
+        setActiveOrders((prev) => {
+          // ถ้า status เป็น completed/cancelled ให้เอาออกจาก active
+          if (updated.status === "completed" || updated.status === "cancelled") {
+            return prev.filter((o) => o.id !== updated.id);
+          }
+          return prev.map((o) => o.id === updated.id ? { ...o, ...updated } : o);
+        });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, async (payload) => {
+        // เพิ่ม order ใหม่เข้า activeOrders ถ้า user เป็น buyer หรือ shopper
+        const { data } = await supabase
+          .from("orders")
+          .select("id, status, created_at, trip_id, trips(origin_zone, destination_zone, shopper_id, profiles(username)), profiles(username)")
+          .eq("id", payload.new.id)
+          .single();
+        if (!data) return;
+        const isBuyer = (data as any).buyer_id === currentUserId;
+        const isShopper = (data as any).trips?.shopper_id === currentUserId;
+        if (isBuyer || isShopper) {
+          setActiveOrders((prev) => [data, ...prev]);
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -156,8 +176,8 @@ export default function I18nDashboard({ username, trips: initialTrips, orders: i
       </div>
 
       {/* Active Order Chats */}
-      {allActiveOrders.length > 0 && (
-        <DashboardChats orders={allActiveOrders} currentUserId={currentUserId} currentUsername={username} />
+      {activeOrders.length > 0 && (
+        <DashboardChats orders={activeOrders} currentUserId={currentUserId} currentUsername={username} />
       )}
 
       {/* Open Trips */}
