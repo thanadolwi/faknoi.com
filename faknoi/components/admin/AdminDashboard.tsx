@@ -77,10 +77,11 @@ export default function AdminDashboard({ userCount, openTrips, slipsPending, sli
       {/* Quick links */}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { href: "/admin/users", label: "👤 ผู้ใช้งาน", desc: "ค้นหาและจัดการ" },
-          { href: "/admin/areas", label: "🏫 พื้นที่", desc: "เปิด/ปิดมหาวิทยาลัย" },
-          { href: "/admin/wallet", label: "💰 ตรวจสลิป", desc: `${slipsPending.length} รอตรวจ` },
-          { href: "/admin/reports", label: "📋 รายงาน", desc: "รายงานปัญหา" },
+          { href: "/admin/users",  label: "👤 ผู้ใช้งาน",  desc: "ค้นหาและจัดการ" },
+          { href: "/admin/areas",  label: "🏫 พื้นที่",     desc: "เปิด/ปิดมหาวิทยาลัย" },
+          { href: "/admin/wallet", label: "💰 ตรวจสลิป",   desc: `${slipsPending.length} รอตรวจ` },
+          { href: "/admin/reports",label: "📋 รายงาน",     desc: "รายงานปัญหา" },
+          { href: "/admin/trips",  label: "🛵 ทริป",        desc: "ดูทริปและออเดอร์" },
         ].map((l) => (
           <Link key={l.href} href={l.href}
             className="card flex items-center justify-between hover:border-brand-blue/30 hover:shadow-md transition-all group">

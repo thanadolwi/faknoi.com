@@ -1,0 +1,29 @@
+import { NextResponse } from "next/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+
+export async function GET() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { data: profile } = await supabase.from("profiles").select("role, username").eq("id", user.id).single();
+  if (profile?.role !== "admin" && profile?.username !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const admin = createAdminClient();
+
+  const { data: trips } = await admin
+    .from("trips")
+    .select(`
+      id, status, origin_zone, destination_zone, university_id,
+      cutoff_time, estimated_delivery_time, current_orders, max_orders,
+      fee_per_item, payment_info, note, created_at,
+      origin_lat, origin_lng, destination_lat, destination_lng,
+      profiles(username),
+      orders(id, status, item_description, quantity, total_price, created_at, profiles(username))
+    `)
+    .order("created_at", { ascending: false });
+
+  return NextResponse.json({ trips: trips || [] });
+}
