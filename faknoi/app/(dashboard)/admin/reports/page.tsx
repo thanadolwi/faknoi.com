@@ -16,7 +16,7 @@ export default async function AdminReportPage() {
   const admin = createAdminClient();
   const { data: reports } = await admin
     .from("reports")
-    .select("*, profiles!reports_user_id_fkey(username, id)")
+    .select("id, subject, body, role, report_status, created_at, reporter_id, reporter_username, phone, gmail, image_url, university_id")
     .order("created_at", { ascending: false });
 
   return <AdminReportsPage reports={reports || []} universities={UNIVERSITIES} adminId={user.id} />;

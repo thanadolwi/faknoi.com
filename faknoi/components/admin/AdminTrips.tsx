@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { MapPin, ArrowRight, Users, Clock, ChevronDown, ChevronUp, Package, GraduationCap } from "lucide-react";
 import Link from "next/link";
 import { UNIVERSITIES } from "@/lib/universities";
+import { createClient } from "@/lib/supabase/client";
 
 const TRIP_STATUS_LABEL: Record<string, { label: string; color: string }> = {
   open:      { label: "เปิดรับ",    color: "bg-green-100 text-green-700" },
@@ -28,10 +29,24 @@ export default function AdminTrips() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
+  async function loadTrips() {
+    const res = await fetch("/api/admin/trips");
+    const d = await res.json();
+    setTrips(d.trips || []);
+    setLoading(false);
+  }
+
   useEffect(() => {
-    fetch("/api/admin/trips")
-      .then((r) => r.json())
-      .then((d) => { setTrips(d.trips || []); setLoading(false); });
+    loadTrips();
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel("admin-trips-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => loadTrips())
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => loadTrips())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const filtered = trips.filter((t) => {

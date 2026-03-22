@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ArrowLeft, Loader2, ChevronDown, BadgeCheck, CheckCircle, Clock, XCircle, History } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { ArrowLeft, Loader2, ChevronDown, BadgeCheck, CheckCircle, XCircle, History } from "lucide-react";
 import Link from "next/link";
 import type { University } from "@/lib/universities";
+import { createClient } from "@/lib/supabase/client";
 
 type SlipStatus = "pending" | "verified" | "updated" | "rejected";
 
@@ -21,23 +22,32 @@ export default function AdminWallet({ universities }: { universities: University
   const [historySlips, setHistorySlips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function loadSlips() {
+  const loadSlips = useCallback(async () => {
     setLoading(true);
-    const [pendingRes, historyRes] = await Promise.all([
+    const [pendingRes, historyRes, verifiedRes] = await Promise.all([
       fetch(`/api/admin/slips?status=pending${selectedUni !== "all" ? `&uni=${selectedUni}` : ""}`),
       fetch(`/api/admin/slips?status=updated${selectedUni !== "all" ? `&uni=${selectedUni}` : ""}`),
+      fetch(`/api/admin/slips?status=verified${selectedUni !== "all" ? `&uni=${selectedUni}` : ""}`),
     ]);
-    const pendingData = await pendingRes.json();
-    const historyData = await historyRes.json();
-    // Also get verified
-    const verifiedRes = await fetch(`/api/admin/slips?status=verified${selectedUni !== "all" ? `&uni=${selectedUni}` : ""}`);
-    const verifiedData = await verifiedRes.json();
+    const [pendingData, historyData, verifiedData] = await Promise.all([
+      pendingRes.json(), historyRes.json(), verifiedRes.json(),
+    ]);
     setSlips([...(pendingData.slips || []), ...(verifiedData.slips || [])]);
     setHistorySlips(historyData.slips || []);
     setLoading(false);
-  }
+  }, [selectedUni]);
 
-  useEffect(() => { loadSlips(); }, [selectedUni]);
+  useEffect(() => {
+    loadSlips();
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel("admin-wallet-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_slips" }, () => loadSlips())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [loadSlips]);
 
   async function updateSlip(slip: any, status: SlipStatus, extra?: { rejectedNote?: string; amountVerified?: number; verifiedNote?: string }) {
     await fetch("/api/admin/slips", {

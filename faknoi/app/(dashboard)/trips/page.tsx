@@ -9,7 +9,7 @@ export default async function TripsPage() {
 
   const { data: allTrips } = await supabase
     .from("trips")
-    .select("id, origin_zone, destination_zone, cutoff_time, current_orders, max_orders, university_id, status, destination_lat, destination_lng, estimated_delivery_time, profiles(username)")
+    .select("id, display_id, origin_zone, destination_zone, cutoff_time, current_orders, max_orders, university_id, status, destination_lat, destination_lng, estimated_delivery_time, profiles(username)")
     .in("status", ["open", "shopping"])
     .gt("cutoff_time", new Date().toISOString())
     .order("cutoff_time", { ascending: true });

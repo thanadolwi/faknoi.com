@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, ChevronDown, MessageCircle, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -23,10 +23,32 @@ export default function AdminReportsPage({ reports: initial, universities, admin
   const [filter, setFilter] = useState("all");
   const [selectedUni, setSelectedUni] = useState("all");
 
-  // Filter by status
+  // Realtime: subscribe to new reports + status updates
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("admin-reports-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "reports" },
+        (payload) => {
+          setReports((prev) => [payload.new as any, ...prev]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "reports" },
+        (payload) => {
+          setReports((prev) =>
+            prev.map((r) => r.id === payload.new.id ? { ...r, ...payload.new } : r)
+          );
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   let filtered = filter === "all" ? reports : reports.filter((r) => r.report_status === filter);
-  // Filter by uni (reports have university_id if we add it, otherwise skip)
-  // For now filter by university_id if present
   if (selectedUni !== "all") {
     filtered = filtered.filter((r) => r.university_id === selectedUni);
   }
@@ -34,7 +56,7 @@ export default function AdminReportsPage({ reports: initial, universities, admin
   async function updateStatus(reportId: string, newStatus: string) {
     const supabase = createClient();
     await supabase.from("reports").update({ report_status: newStatus }).eq("id", reportId);
-    setReports((prev) => prev.map((r) => r.id === reportId ? { ...r, report_status: newStatus } : r));
+    // realtime will update state automatically
   }
 
   return (

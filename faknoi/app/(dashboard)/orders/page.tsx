@@ -42,6 +42,7 @@ export default async function OrdersPage() {
         myOrders={myOrders || []}
         shopperOrders={shopperOrders || []}
         statusLabel={statusLabel}
+        currentUserId={user?.id || ""}
       />
     </div>
   );

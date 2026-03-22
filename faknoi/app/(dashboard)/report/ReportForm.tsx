@@ -154,15 +154,16 @@ export default function ReportForm() {
           <div className="card space-y-2">
             <label className="text-sm font-black text-brand-navy flex items-center gap-1.5">
               <GraduationCap className="w-4 h-4 text-brand-blue" />
-              พื้นที่มหาวิทยาลัย
+              พื้นที่มหาวิทยาลัย <span className="text-red-400">*</span>
             </label>
             <div className="relative">
               <select
                 value={universityId}
                 onChange={(e) => setUniversityId(e.target.value)}
                 className="input-field text-sm appearance-none pr-8"
+                required
               >
-                <option value="">เลือกมหาวิทยาลัย (ไม่บังคับ)</option>
+                <option value="" disabled>เลือกมหาวิทยาลัย</option>
                 {userUnis.length > 0
                   ? userUnis.map((u) => <option key={u.id} value={u.id}>{u.shortName}</option>)
                   : UNIVERSITIES.map((u) => <option key={u.id} value={u.id}>{u.shortName}</option>)
@@ -224,7 +225,7 @@ export default function ReportForm() {
           {error && <div className="bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-2xl font-medium">{error}</div>}
 
           <button type="submit"
-            disabled={loading || !body.trim() || !subject.trim() || !phone.trim() || !gmail.trim()}
+            disabled={loading || !body.trim() || !subject.trim() || !phone.trim() || !gmail.trim() || !universityId}
             className="btn-primary w-full py-3.5 text-base">
             {loading
               ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
