@@ -44,7 +44,6 @@ export async function PATCH(request: Request) {
   if (type === "trip") {
     const { error } = await admin.from("trips").update({
       status,
-      updated_at: new Date().toISOString(),
       ...(status === "completed" ? { closed_at: new Date().toISOString() } : {}),
     }).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
