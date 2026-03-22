@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Plus, MapPin, ArrowRight, Users, GraduationCap, Clock, Navigation } from "lucide-react";
 import CountdownTimer from "./CountdownTimer";
 import UniversityFilter from "./UniversityFilter";
@@ -12,13 +13,30 @@ import { t } from "@/lib/i18n";
 
 interface Props {
   trips: any[];
-  zone?: string;
 }
 
-export default function I18nTrips({ trips, zone }: Props) {
+export default function I18nTrips({ trips }: Props) {
   const { lang } = useLang();
-  const [sortedTrips, setSortedTrips] = useState<any[]>(trips);
+  const searchParams = useSearchParams();
+  const uni = searchParams.get("uni") || "";
+  const zone = searchParams.get("zone") || "";
+
+  const [sortedTrips, setSortedTrips] = useState<any[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+
+  // filter ฝั่ง client ตาม uni + zone
+  const filteredTrips = useMemo(() => {
+    return trips.filter((trip) => {
+      if (uni && trip.university_id !== uni) return false;
+      if (zone && trip.origin_zone !== zone && trip.destination_zone !== zone) return false;
+      return true;
+    });
+  }, [trips, uni, zone]);
+
+  // sync sortedTrips เมื่อ filter เปลี่ยน
+  useEffect(() => {
+    setSortedTrips(filteredTrips);
+  }, [filteredTrips]);
 
   return (
     <div className="space-y-5">
@@ -36,7 +54,7 @@ export default function I18nTrips({ trips, zone }: Props) {
       <UniversityFilter />
 
       {/* Current location + sort by distance */}
-      <NearbyTrips trips={trips} onSorted={setSortedTrips} onLocated={setUserLoc} />
+      <NearbyTrips trips={filteredTrips} onSorted={setSortedTrips} onLocated={setUserLoc} />
 
       {sortedTrips.length > 0 ? (
         <div className="space-y-3">
