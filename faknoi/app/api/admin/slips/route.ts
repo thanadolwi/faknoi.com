@@ -1,43 +1,41 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
-const ADMIN_USERNAME = "testtest";
-
 async function checkAdmin() {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("username")
-      .eq("id", user.id)
-      .single();
-    if (profile?.username !== ADMIN_USERNAME) return null;
+    const { data: profile } = await supabase.from("profiles").select("role,username").eq("id", user.id).single();
+    if (profile?.role !== "admin" && profile?.username !== "admin") return null;
     return user;
   } catch {
     return null;
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const user = await checkAdmin();
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const { searchParams } = new URL(req.url);
+  const statusFilter = searchParams.get("status"); // pending|verified|updated|rejected|all
+  const uniFilter = searchParams.get("uni");
+
   try {
     const adminSupabase = createAdminClient();
-    const { data, error } = await adminSupabase
+    let query = adminSupabase
       .from("payment_slips")
-      .select("id, user_id, slip_url, amount_paid, outstanding_before, status, created_at, profiles!payment_slips_user_id_fkey(username)")
+      .select("id, user_id, slip_url, amount_paid, outstanding_before, status, created_at, rejected_note, amount_verified, verified_note, university_id, profiles!payment_slips_user_id_fkey(username)")
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("slips query error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    if (statusFilter && statusFilter !== "all") query = query.eq("status", statusFilter);
+    if (uniFilter) query = query.eq("university_id", uniFilter);
+
+    const { data, error } = await query;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ slips: data || [] });
   } catch (e: any) {
-    console.error("admin slips exception:", e);
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
@@ -47,20 +45,24 @@ export async function PATCH(req: Request) {
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
-    const { slipId, status, slip } = await req.json();
+    const { slipId, status, slip, rejectedNote, amountVerified, verifiedNote } = await req.json();
     const adminSupabase = createAdminClient();
 
-    await adminSupabase.from("payment_slips").update({
+    const updateData: Record<string, any> = {
       status,
       reviewed_by: user.id,
       updated_at: new Date().toISOString(),
-    }).eq("id", slipId);
+    };
+    if (rejectedNote !== undefined) updateData.rejected_note = rejectedNote;
+    if (amountVerified !== undefined) updateData.amount_verified = amountVerified;
+    if (verifiedNote !== undefined) updateData.verified_note = verifiedNote;
 
-    if (status === "updated") {
-      const newBalance = Math.max(0, Number(slip.outstanding_before) - Number(slip.amount_paid));
-      await adminSupabase.from("profiles")
-        .update({ outstanding_balance: newBalance })
-        .eq("id", slip.user_id);
+    await adminSupabase.from("payment_slips").update(updateData).eq("id", slipId);
+
+    if (status === "updated" && slip) {
+      const paid = amountVerified != null ? Number(amountVerified) : Number(slip.amount_paid);
+      const newBalance = Math.max(0, Number(slip.outstanding_before) - paid);
+      await adminSupabase.from("profiles").update({ outstanding_balance: newBalance }).eq("id", slip.user_id);
     }
 
     return NextResponse.json({ ok: true });

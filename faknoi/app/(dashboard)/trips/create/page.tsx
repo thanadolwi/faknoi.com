@@ -71,6 +71,7 @@ export default function CreateTripPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [outstanding, setOutstanding] = useState<number | null>(null);
+  const [areaClosed, setAreaClosed] = useState<{ is_open: boolean; note: string | null } | null>(null);
 
   useEffect(() => {
     async function checkBalance() {
@@ -86,6 +87,24 @@ export default function CreateTripPage() {
     }
     checkBalance();
   }, []);
+
+  // Check area status when university changes
+  useEffect(() => {
+    if (!selectedUniId) { setAreaClosed(null); return; }
+    const supabase = createClient();
+    supabase
+      .from("area_status")
+      .select("is_open, note")
+      .eq("university_id", selectedUniId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data && data.is_open === false) {
+          setAreaClosed(data);
+        } else {
+          setAreaClosed(null);
+        }
+      });
+  }, [selectedUniId]);
 
   const selectedUni = UNIVERSITIES.find((u) => u.id === selectedUniId);
   const filteredUnis = UNIVERSITIES.filter((u) =>
@@ -135,6 +154,22 @@ export default function CreateTripPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Area closed warning */}
+        {areaClosed && (
+          <div className="card border-2 border-red-200 bg-red-50">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-black text-red-700 text-sm">พื้นที่นี้ถูกปิดชั่วคราว</p>
+                <p className="text-xs text-red-600 mt-1">ไม่สามารถเปิดทริปในมหาวิทยาลัยนี้ได้ในขณะนี้</p>
+                {areaClosed.note && (
+                  <p className="text-xs text-red-500 font-bold mt-1">หมายเหตุ: {areaClosed.note}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Outstanding balance warning */}
         {outstanding !== null && outstanding > 300 && (
           <div className="card border-2 border-red-200 bg-red-50 space-y-3">
@@ -272,7 +307,7 @@ export default function CreateTripPage() {
 
         {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">{error}</div>}
 
-        <button type="submit" disabled={loading || !selectedUniId || (outstanding !== null && outstanding > 300)} className="btn-primary w-full flex items-center justify-center gap-2 py-3">
+        <button type="submit" disabled={loading || !selectedUniId || !!areaClosed || (outstanding !== null && outstanding > 300)} className="btn-primary w-full flex items-center justify-center gap-2 py-3">
           {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus className="w-4 h-4" />}
           {loading ? t(lang, "ct_creating") : t(lang, "ct_open_trip")}
         </button>

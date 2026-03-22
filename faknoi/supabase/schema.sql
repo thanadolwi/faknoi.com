@@ -113,3 +113,93 @@ alter table public.trips add column if not exists estimated_delivery_time timest
 
 -- Column for purchase proof photo on orders
 alter table public.orders add column if not exists purchase_photo_url text;
+
+-- ===== Admin system =====
+
+-- Mark admin by role in profiles
+alter table public.profiles add column if not exists role text default 'user' check (role in ('user','admin'));
+
+-- Area status table (per university)
+create table if not exists public.area_status (
+  id uuid default uuid_generate_v4() primary key,
+  university_id text not null unique,
+  is_open boolean default true,
+  note text,
+  updated_by uuid references public.profiles(id),
+  updated_at timestamptz default now()
+);
+
+-- Admin actions log (for notifications to users)
+create table if not exists public.admin_actions (
+  id uuid default uuid_generate_v4() primary key,
+  target_user_id uuid references public.profiles(id) on delete cascade,
+  action_type text not null, -- 'cancel_trip','delete_trip','cancel_order', etc.
+  note text,
+  admin_id uuid references public.profiles(id),
+  created_at timestamptz default now(),
+  seen boolean default false
+);
+
+-- Add rejected status and note to payment_slips
+alter table public.payment_slips add column if not exists rejected_note text;
+alter table public.payment_slips add column if not exists amount_verified numeric(10,2);
+alter table public.payment_slips add column if not exists verified_note text;
+
+-- RLS for new tables
+alter table public.area_status enable row level security;
+alter table public.admin_actions enable row level security;
+
+create policy "area_status_select" on public.area_status for select using (true);
+create policy "area_status_admin" on public.area_status for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);
+
+create policy "admin_actions_select" on public.admin_actions for select
+  using (target_user_id = auth.uid() or exists (
+    select 1 from public.profiles where id = auth.uid() and role = 'admin'
+  ));
+create policy "admin_actions_insert" on public.admin_actions for insert
+  with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+create policy "admin_actions_update" on public.admin_actions for update
+  using (target_user_id = auth.uid());
+
+-- report_messages table (for admin <-> user chat on reports)
+create table if not exists public.report_messages (
+  id uuid default uuid_generate_v4() primary key,
+  report_id uuid references public.reports(id) on delete cascade not null,
+  sender_id uuid references public.profiles(id) on delete cascade not null,
+  message text not null,
+  created_at timestamptz default now()
+);
+
+alter table public.report_messages enable row level security;
+
+create policy "report_messages_select" on public.report_messages for select
+  using (
+    exists (
+      select 1 from public.reports r
+      where r.id = report_id
+        and (r.user_id = auth.uid() or exists (
+          select 1 from public.profiles where id = auth.uid() and role = 'admin'
+        ))
+    )
+  );
+
+create policy "report_messages_insert" on public.report_messages for insert
+  with check (
+    auth.uid() = sender_id and
+    exists (
+      select 1 from public.reports r
+      where r.id = report_id
+        and (r.user_id = auth.uid() or exists (
+          select 1 from public.profiles where id = auth.uid() and role = 'admin'
+        ))
+    )
+  );
+
+-- Add university_id to payment_slips and reports for filtering
+alter table public.payment_slips add column if not exists university_id text;
+alter table public.reports add column if not exists university_id text;
+
+-- Set role = 'admin' for username 'admin'
+update public.profiles set role = 'admin' where username = 'admin';

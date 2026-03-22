@@ -1,18 +1,20 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import ReportForm from "./ReportForm";
-import AdminReports from "./AdminReports";
 
 export default async function ReportPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const username = user?.user_metadata?.username || "";
+  if (!user) redirect("/login");
 
-  if (username === "testtest") {
-    const { data: reports } = await supabase
-      .from("reports")
-      .select("*")
-      .order("created_at", { ascending: false });
-    return <AdminReports reports={reports || []} />;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role === "admin") {
+    redirect("/admin/reports");
   }
 
   return <ReportForm />;

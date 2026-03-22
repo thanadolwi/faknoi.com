@@ -1,0 +1,256 @@
+"use client";
+
+import { useState } from "react";
+import { Search, ArrowLeft, Loader2, Trash2, XCircle, AlertCircle, ChevronDown } from "lucide-react";
+import Link from "next/link";
+
+interface UserProfile {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  outstanding_balance: number;
+  created_at: string;
+}
+
+export default function AdminUsers() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<UserProfile[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [userData, setUserData] = useState<any>(null);
+  const [loadingUser, setLoadingUser] = useState(false);
+  // Action modal
+  const [actionModal, setActionModal] = useState<{ type: string; id: string; label: string } | null>(null);
+  const [actionNote, setActionNote] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+
+  async function searchUsers(q: string) {
+    setQuery(q);
+    if (!q.trim()) { setResults([]); return; }
+    setSearching(true);
+    const res = await fetch(`/api/admin/users?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    setResults(data.users || []);
+    setSearching(false);
+  }
+
+  async function loadUser(user: UserProfile) {
+    setSelectedUser(user);
+    setResults([]);
+    setQuery(user.username);
+    setLoadingUser(true);
+    const res = await fetch(`/api/admin/users?userId=${user.id}`);
+    const data = await res.json();
+    setUserData(data);
+    setLoadingUser(false);
+  }
+
+  async function performAction() {
+    if (!actionModal || !selectedUser) return;
+    setActionLoading(true);
+    await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: actionModal.type,
+        targetUserId: selectedUser.id,
+        tripId: actionModal.type.includes("trip") ? actionModal.id : undefined,
+        orderId: actionModal.type.includes("order") ? actionModal.id : undefined,
+        note: actionNote,
+      }),
+    });
+    setActionModal(null);
+    setActionNote("");
+    setActionLoading(false);
+    // Reload user data
+    await loadUser(selectedUser);
+  }
+
+  const statusLabel: Record<string, string> = {
+    pending: "รอรับ", accepted: "รับแล้ว", shopping: "กำลังซื้อ",
+    bought: "ซื้อแล้ว", delivering: "กำลังส่ง", completed: "สำเร็จ", cancelled: "ยกเลิก",
+    open: "เปิด", closed: "ปิด",
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-5 pb-10">
+      <div className="flex items-center gap-3">
+        <Link href="/admin" className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
+          <ArrowLeft className="w-5 h-5 text-gray-500" />
+        </Link>
+        <div>
+          <h1 className="text-xl font-black text-brand-navy">👤 ผู้ใช้งาน</h1>
+          <p className="text-sm text-gray-400">ค้นหาและจัดการบัญชีผู้ใช้</p>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          className="input-field pl-9"
+          placeholder="ค้นหา Username..."
+          value={query}
+          onChange={(e) => searchUsers(e.target.value)}
+        />
+        {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />}
+        {results.length > 0 && (
+          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-10 overflow-hidden">
+            {results.map((u) => (
+              <button key={u.id} type="button" onClick={() => loadUser(u)}
+                className="w-full text-left px-4 py-3 hover:bg-brand-blue/5 transition-colors border-b border-gray-50 last:border-0">
+                <p className="font-bold text-brand-navy">@{u.username}</p>
+                <p className="text-xs text-gray-400">{u.email} · ค้างชำระ ฿{Number(u.outstanding_balance || 0).toFixed(2)}</p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* User detail */}
+      {loadingUser && (
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="w-6 h-6 text-brand-blue animate-spin" />
+        </div>
+      )}
+
+      {selectedUser && userData && !loadingUser && (
+        <div className="space-y-4">
+          {/* Profile card */}
+          <div className="card space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-black text-brand-navy text-lg">@{selectedUser.username}</p>
+                <p className="text-xs text-gray-400">{selectedUser.email}</p>
+              </div>
+              <span className={`pill ${selectedUser.role === "admin" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"}`}>
+                {selectedUser.role}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-gray-50 rounded-xl px-3 py-2">
+                <p className="text-gray-400">ค้างชำระ</p>
+                <p className="font-black text-brand-navy">฿{Number(selectedUser.outstanding_balance || 0).toFixed(2)}</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl px-3 py-2">
+                <p className="text-gray-400">สมัครเมื่อ</p>
+                <p className="font-black text-brand-navy">{new Date(selectedUser.created_at).toLocaleDateString("th-TH")}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Trips */}
+          {userData.trips?.length > 0 && (
+            <div>
+              <h3 className="font-black text-brand-navy text-sm mb-2">🛵 ทริป ({userData.trips.length})</h3>
+              <div className="space-y-2">
+                {userData.trips.map((trip: any) => (
+                  <div key={trip.id} className="card flex items-center justify-between py-3">
+                    <div>
+                      <p className="text-sm font-bold text-brand-navy">{trip.origin_zone} → {trip.destination_zone}</p>
+                      <p className="text-xs text-gray-400">{statusLabel[trip.status] || trip.status} · {new Date(trip.created_at).toLocaleDateString("th-TH")}</p>
+                    </div>
+                    {trip.status !== "cancelled" && trip.status !== "completed" && (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => setActionModal({ type: "cancel_trip", id: trip.id, label: `ยกเลิกทริป ${trip.origin_zone}→${trip.destination_zone}` })}
+                          className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors" title="ยกเลิกทริป">
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setActionModal({ type: "delete_trip", id: trip.id, label: `ลบทริป ${trip.origin_zone}→${trip.destination_zone}` })}
+                          className="p-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors" title="ลบทริป">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Orders */}
+          {userData.orders?.length > 0 && (
+            <div>
+              <h3 className="font-black text-brand-navy text-sm mb-2">📋 ออเดอร์ ({userData.orders.length})</h3>
+              <div className="space-y-2">
+                {userData.orders.map((order: any) => (
+                  <div key={order.id} className="card flex items-center justify-between py-3">
+                    <div>
+                      <p className="text-sm font-bold text-brand-navy">
+                        {order.trips?.origin_zone} → {order.trips?.destination_zone}
+                      </p>
+                      <p className="text-xs text-gray-400">{statusLabel[order.status] || order.status} · {new Date(order.created_at).toLocaleDateString("th-TH")}</p>
+                    </div>
+                    {order.status !== "cancelled" && order.status !== "completed" && (
+                      <button
+                        onClick={() => setActionModal({ type: "cancel_order", id: order.id, label: `ยกเลิกออเดอร์` })}
+                        className="p-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors" title="ยกเลิกออเดอร์">
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Admin action history */}
+          {userData.actions?.length > 0 && (
+            <div>
+              <h3 className="font-black text-brand-navy text-sm mb-2">📝 ประวัติการดำเนินการ</h3>
+              <div className="space-y-2">
+                {userData.actions.map((a: any) => (
+                  <div key={a.id} className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
+                    <p className="text-xs font-bold text-red-700">{a.action_type}</p>
+                    {a.note && <p className="text-xs text-red-600 mt-0.5">{a.note}</p>}
+                    <p className="text-xs text-red-400 mt-1">{new Date(a.created_at).toLocaleString("th-TH")}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Action confirmation modal */}
+      {actionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-black text-brand-navy">ยืนยันการดำเนินการ</p>
+                <p className="text-sm text-gray-600 mt-1">{actionModal.label}</p>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-600 mb-1.5 block">หมายเหตุ (จะแจ้งให้ผู้ใช้ทราบ) *</label>
+              <textarea
+                className="input-field text-sm resize-none"
+                rows={3}
+                placeholder="ระบุเหตุผล..."
+                value={actionNote}
+                onChange={(e) => setActionNote(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={performAction} disabled={actionLoading || !actionNote.trim()}
+                className="btn-primary flex-1 text-sm py-2.5 flex items-center justify-center gap-2">
+                {actionLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                ยืนยัน
+              </button>
+              <button onClick={() => { setActionModal(null); setActionNote(""); }}
+                className="flex-1 text-sm py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

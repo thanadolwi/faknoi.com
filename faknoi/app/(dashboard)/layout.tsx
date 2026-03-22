@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/Navbar";
 import VisualAccessibility from "@/components/VisualAccessibility";
+import AdminNotificationBanner from "@/components/AdminNotificationBanner";
 import { useLang } from "@/lib/LangContext";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -67,6 +68,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-white">
       <Navbar username={username} />
       <main className="max-w-5xl mx-auto px-4 py-6 pb-28 md:pb-8">
+        <AdminNotificationBanner />
         {children}
       </main>
       {ttsActive && <VisualAccessibility lang={lang} />}

@@ -7,7 +7,6 @@ import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
 
 const MAX_SIZE = 500 * 1024;
-const ADMIN_USERNAME = "testtest";
 
 type SlipStatus = "pending" | "verified" | "updated";
 
@@ -37,16 +36,14 @@ export default function WalletPage() {
       if (!user) return;
       setUserId(user.id);
 
-      const username = user.user_metadata?.username || "";
-      const adminMode = username === ADMIN_USERNAME;
-      setIsAdmin(adminMode);
-
-      // Load profile outstanding balance
+      // Check admin by role
       const { data: profile } = await supabase
         .from("profiles")
-        .select("outstanding_balance")
+        .select("outstanding_balance, role")
         .eq("id", user.id)
         .single();
+      const adminMode = profile?.role === "admin";
+      setIsAdmin(adminMode);
       setOutstanding(Number(profile?.outstanding_balance || 0));
 
       // Load completed orders

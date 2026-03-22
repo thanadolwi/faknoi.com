@@ -15,8 +15,25 @@ export default function Navbar({ username }: { username: string }) {
   const [open, setOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
   const { lang } = useLang();
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const navItems = [
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("profiles").select("role, username").eq("id", user.id).single().then(({ data }) => {
+        setIsAdmin(data?.role === "admin" || data?.username === "admin");
+      });
+    });
+  }, []);
+
+  const navItems = isAdmin ? [
+    { href: "/admin",         label: "หน้าหลัก",  icon: LayoutDashboard, emoji: "🏠" },
+    { href: "/admin/users",   label: "ผู้ใช้งาน", icon: User,             emoji: "👤" },
+    { href: "/admin/areas",   label: "พื้นที่",   icon: MapPin,           emoji: "🏫" },
+    { href: "/admin/wallet",  label: "ถุงเงิน",   icon: Wallet,           emoji: "💰" },
+    { href: "/admin/reports", label: "รายงาน",    icon: AlertTriangle,    emoji: "📋" },
+  ] : [
     { href: "/dashboard", label: t(lang, "nav_home"),   icon: LayoutDashboard, emoji: "🏠" },
     { href: "/trips",     label: t(lang, "nav_trips"),  icon: MapPin,           emoji: "🛵" },
     { href: "/orders",    label: t(lang, "nav_orders"), icon: ClipboardList,    emoji: "📋" },
