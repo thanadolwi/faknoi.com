@@ -19,7 +19,6 @@ export default async function TripsPage({
     .order("cutoff_time", { ascending: true });
 
   if (uni) query = query.eq("university_id", uni);
-  if (zone) query = query.or(`origin_zone.eq.${zone},destination_zone.eq.${zone}`);
 
   const { data: allTrips } = await query;
 
@@ -27,6 +26,7 @@ export default async function TripsPage({
   const trips = (allTrips || []).filter((trip) => {
     if (trip.current_orders >= trip.max_orders) return false;
     if (uni && (!trip.university_id || trip.university_id !== uni)) return false;
+    if (zone && trip.origin_zone !== zone && trip.destination_zone !== zone) return false;
     return true;
   });
 
