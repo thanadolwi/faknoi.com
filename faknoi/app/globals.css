@@ -185,6 +185,20 @@
 .ud-other-reduce-ui .animate-float { animation: none !important; }
 
 /* ===== Universal Design: Color Blind ===== */
+/* Deuteranopia / Protanopia — ตาบอดสีแดง-เขียว */
+.ud-colorblind-rg {
+  filter: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><defs><filter id='deuteranopia'><feColorMatrix type='matrix' values='0.367 0.861 -0.228 0 0  0.280 0.673  0.047 0 0  -0.012 0.043  0.969 0 0  0 0 0 1 0'/></filter></defs></svg>#deuteranopia") !important;
+}
+/* Tritanopia — ตาบอดสีน้ำเงิน-เหลือง */
+.ud-colorblind-by {
+  filter: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><defs><filter id='tritanopia'><feColorMatrix type='matrix' values='1.256 -0.077 -0.179 0 0  -0.078  0.931  0.148 0 0   0.005  0.691  0.304 0 0   0 0 0 1 0'/></filter></defs></svg>#tritanopia") !important;
+}
+/* Achromatopsia — ตาบอดสีทั้งหมด (grayscale) */
+.ud-colorblind-all {
+  filter: grayscale(100%) contrast(1.1) !important;
+}
+
+/* Legacy class — keep for backward compat */
 .ud-other-colorblind .bg-green-100 { background-color: #dbeafe !important; }
 .ud-other-colorblind .text-green-700 { color: #1d4ed8 !important; }
 .ud-other-colorblind .bg-red-100 { background-color: #fef9c3 !important; }

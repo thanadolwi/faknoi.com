@@ -47,6 +47,10 @@ const LABELS: Record<Lang, Record<string, string>> = {
     otherReduceUIDesc: "ซ่อน gradient, shadow และ decoration",
     otherColorBlind: "สำหรับตาบอดสี",
     otherColorBlindDesc: "ปรับสีให้แยกแยะได้ง่ายขึ้น",
+    colorBlindLabel: "ตาบอดสี",
+    colorBlindRG: "ตาบอดสีแดง-เขียว", colorBlindRGDesc: "Deuteranopia / Protanopia",
+    colorBlindBY: "ตาบอดสีน้ำเงิน-เหลือง", colorBlindBYDesc: "Tritanopia",
+    colorBlindAll: "ตาบอดสีทั้งหมด", colorBlindAllDesc: "Achromatopsia (ขาว-ดำ)",
     theme: "ธีม",
     themeLight: "Light",
     themeDark: "Dark",
@@ -83,6 +87,10 @@ const LABELS: Record<Lang, Record<string, string>> = {
     otherReduceUIDesc: "Hide gradients, shadows and decorations",
     otherColorBlind: "Color Blind Mode",
     otherColorBlindDesc: "Adjust colors for easier distinction",
+    colorBlindLabel: "Color Blind",
+    colorBlindRG: "Red-Green Color Blind", colorBlindRGDesc: "Deuteranopia / Protanopia",
+    colorBlindBY: "Blue-Yellow Color Blind", colorBlindBYDesc: "Tritanopia",
+    colorBlindAll: "Full Color Blind", colorBlindAllDesc: "Achromatopsia (grayscale)",
     theme: "Theme",
     themeLight: "Light",
     themeDark: "Dark",
@@ -119,6 +127,10 @@ const LABELS: Record<Lang, Record<string, string>> = {
     otherReduceUIDesc: "隐藏渐变、阴影和装饰",
     otherColorBlind: "色盲模式",
     otherColorBlindDesc: "调整颜色以便于区分",
+    colorBlindLabel: "色盲",
+    colorBlindRG: "红绿色盲", colorBlindRGDesc: "Deuteranopia / Protanopia",
+    colorBlindBY: "蓝黄色盲", colorBlindBYDesc: "Tritanopia",
+    colorBlindAll: "全色盲", colorBlindAllDesc: "Achromatopsia（灰度）",
     theme: "主题",
     themeLight: "浅色",
     themeDark: "深色",
@@ -155,6 +167,10 @@ const LABELS: Record<Lang, Record<string, string>> = {
     otherReduceUIDesc: "ग्रेडिएंट, शैडो छुपाएं",
     otherColorBlind: "कलर ब्लाइंड मोड",
     otherColorBlindDesc: "रंगों को आसानी से पहचानें",
+    colorBlindLabel: "वर्णांध",
+    colorBlindRG: "लाल-हरा वर्णांध", colorBlindRGDesc: "Deuteranopia / Protanopia",
+    colorBlindBY: "नीला-पीला वर्णांध", colorBlindBYDesc: "Tritanopia",
+    colorBlindAll: "पूर्ण वर्णांध", colorBlindAllDesc: "Achromatopsia (ग्रेस्केल)",
     theme: "थीम",
     themeLight: "लाइट",
     themeDark: "डार्क",
@@ -177,7 +193,9 @@ export default function AccountPage() {
   const [udOther, setUdOther] = useState(false);
   const [udOtherTTS, setUdOtherTTS] = useState(false);
   const [udOtherReduceUI, setUdOtherReduceUI] = useState(false);
-  const [udOtherColorBlind, setUdOtherColorBlind] = useState(false);
+  const [udColorBlindRG, setUdColorBlindRG] = useState(false);
+  const [udColorBlindBY, setUdColorBlindBY] = useState(false);
+  const [udColorBlindAll, setUdColorBlindAll] = useState(false);
 
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -201,7 +219,9 @@ export default function AccountPage() {
     setUdOther(localStorage.getItem("ud_other") === "1");
     setUdOtherTTS(localStorage.getItem("ud_other_tts") === "1");
     setUdOtherReduceUI(localStorage.getItem("ud_other_reduce_ui") === "1");
-    setUdOtherColorBlind(localStorage.getItem("ud_other_colorblind") === "1");
+    setUdColorBlindRG(localStorage.getItem("ud_colorblind_rg") === "1");
+    setUdColorBlindBY(localStorage.getItem("ud_colorblind_by") === "1");
+    setUdColorBlindAll(localStorage.getItem("ud_colorblind_all") === "1");
   }, []);
 
   // Apply theme to <html>
@@ -245,9 +265,22 @@ export default function AccountPage() {
   }, [udOtherReduceUI]);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("ud-other-colorblind", udOtherColorBlind);
-    localStorage.setItem("ud_other_colorblind", udOtherColorBlind ? "1" : "0");
-  }, [udOtherColorBlind]);
+    document.documentElement.classList.toggle("ud-colorblind-rg", udColorBlindRG);
+    localStorage.setItem("ud_colorblind_rg", udColorBlindRG ? "1" : "0");
+    if (udColorBlindRG) { setUdColorBlindBY(false); setUdColorBlindAll(false); }
+  }, [udColorBlindRG]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("ud-colorblind-by", udColorBlindBY);
+    localStorage.setItem("ud_colorblind_by", udColorBlindBY ? "1" : "0");
+    if (udColorBlindBY) { setUdColorBlindRG(false); setUdColorBlindAll(false); }
+  }, [udColorBlindBY]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("ud-colorblind-all", udColorBlindAll);
+    localStorage.setItem("ud_colorblind_all", udColorBlindAll ? "1" : "0");
+    if (udColorBlindAll) { setUdColorBlindRG(false); setUdColorBlindBY(false); }
+  }, [udColorBlindAll]);
 
   // setLang is now from useLang() context — no local handler needed
 
@@ -288,7 +321,6 @@ export default function AccountPage() {
   const udOtherSubItems = [
     { key: "tts",        icon: Mic,     val: udOtherTTS,        set: setUdOtherTTS,        label: t.otherTTS,        desc: t.otherTTSDesc },
     { key: "reduceui",   icon: Layers,  val: udOtherReduceUI,   set: setUdOtherReduceUI,   label: t.otherReduceUI,   desc: t.otherReduceUIDesc },
-    { key: "colorblind", icon: Palette, val: udOtherColorBlind, set: setUdOtherColorBlind, label: t.otherColorBlind, desc: t.otherColorBlindDesc },
   ];
 
   const ttsActive = udVisual || udOtherTTS;
@@ -407,6 +439,33 @@ export default function AccountPage() {
                           sv ? "border-brand-blue bg-brand-blue" : "border-gray-300"
                         }`}>
                           {sv && <Check className="w-2.5 h-2.5 text-white" />}
+                        </div>
+                      </button>
+                    ))}
+                    {/* Color blind sub-options */}
+                    <p className="text-[10px] text-gray-400 px-1 pt-1">{t.colorBlindLabel}</p>
+                    {[
+                      { key: "rg",  val: udColorBlindRG,  set: setUdColorBlindRG,  label: t.colorBlindRG,  desc: t.colorBlindRGDesc },
+                      { key: "by",  val: udColorBlindBY,  set: setUdColorBlindBY,  label: t.colorBlindBY,  desc: t.colorBlindBYDesc },
+                      { key: "all", val: udColorBlindAll, set: setUdColorBlindAll, label: t.colorBlindAll, desc: t.colorBlindAllDesc },
+                    ].map(({ key: ck, val: cv, set: cset, label: clabel, desc: cdesc }) => (
+                      <button key={ck} onClick={() => cset(!cv)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border transition-all duration-200 text-left ${
+                          cv ? "border-brand-blue/40 bg-brand-blue/5" : "border-gray-100 bg-gray-50 hover:border-brand-blue/20"
+                        }`}>
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          cv ? "text-white" : "bg-gray-200 text-gray-500"
+                        }`} style={cv ? { background: "linear-gradient(135deg,#5478FF,#53CBF3)" } : {}}>
+                          <Palette className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-bold text-xs ${cv ? "text-brand-navy" : "text-gray-700"}`}>{clabel}</p>
+                          <p className="text-[10px] text-gray-400 truncate">{cdesc}</p>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                          cv ? "border-brand-blue bg-brand-blue" : "border-gray-300"
+                        }`}>
+                          {cv && <Check className="w-2.5 h-2.5 text-white" />}
                         </div>
                       </button>
                     ))}

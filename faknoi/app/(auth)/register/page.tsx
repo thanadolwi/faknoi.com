@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Eye, EyeOff, UserPlus, Accessibility, Volume2, Brain, MoreHorizontal, Mic, Layers, Palette, Check, Globe } from "lucide-react";
 import { useLang, type Lang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
+import VisualAccessibility from "@/components/VisualAccessibility";
 
 const LANG_OPTIONS: { value: Lang; label: string; flag: string }[] = [
   { value: "th", label: "ภาษาไทย", flag: "🇹🇭" },
@@ -21,7 +22,10 @@ const REG_LABELS: Record<Lang, {
   langTitle: string; udTitle: string; optionalHint: string; udHint: string;
   udVisual: string; udVisualDesc: string; udHearing: string; udHearingDesc: string;
   udAutism: string; udAutismDesc: string; udOther: string; udOtherDesc: string;
-  udTTS: string; udReduceUI: string; udColorBlind: string;
+  udTTS: string; udReduceUI: string;
+  udColorBlindRG: string; udColorBlindRGDesc: string;
+  udColorBlindBY: string; udColorBlindBYDesc: string;
+  udColorBlindAll: string; udColorBlindAllDesc: string;
   termsErr: string; nationalIdErr: string;
 }> = {
   th: {
@@ -33,7 +37,10 @@ const REG_LABELS: Record<Lang, {
     udHearing: "ผู้พิการทางการได้ยิน", udHearingDesc: "แสดงคำบรรยายและการแจ้งเตือนด้วยภาพ",
     udAutism: "ออทิสติก", udAutismDesc: "ลด animation, UI เรียบง่ายขึ้น",
     udOther: "อื่นๆ", udOtherDesc: "ปรับแต่งเพิ่มเติม",
-    udTTS: "อ่านข้อความออกเสียง", udReduceUI: "ลด UI", udColorBlind: "สำหรับตาบอดสี",
+    udTTS: "อ่านข้อความออกเสียง", udReduceUI: "ลด UI",
+    udColorBlindRG: "ตาบอดสีแดง-เขียว", udColorBlindRGDesc: "Deuteranopia / Protanopia",
+    udColorBlindBY: "ตาบอดสีน้ำเงิน-เหลือง", udColorBlindBYDesc: "Tritanopia",
+    udColorBlindAll: "ตาบอดสีทั้งหมด", udColorBlindAllDesc: "Achromatopsia (ขาว-ดำ)",
     termsErr: "กรุณายอมรับเงื่อนไขและนโยบายความเป็นส่วนตัวก่อน",
     nationalIdErr: "เลขบัตรประชาชนต้องเป็นตัวเลข 13 หลัก",
   },
@@ -46,7 +53,10 @@ const REG_LABELS: Record<Lang, {
     udHearing: "Hearing Impairment", udHearingDesc: "Show captions and visual alerts",
     udAutism: "Autism", udAutismDesc: "Reduce animations, simpler UI",
     udOther: "Other", udOtherDesc: "Additional customization",
-    udTTS: "Text-to-Speech", udReduceUI: "Reduce UI", udColorBlind: "Color Blind Mode",
+    udTTS: "Text-to-Speech", udReduceUI: "Reduce UI",
+    udColorBlindRG: "Red-Green Color Blind", udColorBlindRGDesc: "Deuteranopia / Protanopia",
+    udColorBlindBY: "Blue-Yellow Color Blind", udColorBlindBYDesc: "Tritanopia",
+    udColorBlindAll: "Full Color Blind", udColorBlindAllDesc: "Achromatopsia (grayscale)",
     termsErr: "Please accept the terms and privacy policy first",
     nationalIdErr: "National ID must be 13 digits",
   },
@@ -59,7 +69,10 @@ const REG_LABELS: Record<Lang, {
     udHearing: "听觉障碍", udHearingDesc: "显示字幕和视觉提醒",
     udAutism: "自闭症", udAutismDesc: "减少动画，简化界面",
     udOther: "其他", udOtherDesc: "其他自定义设置",
-    udTTS: "文字转语音", udReduceUI: "简化界面", udColorBlind: "色盲模式",
+    udTTS: "文字转语音", udReduceUI: "简化界面",
+    udColorBlindRG: "红绿色盲", udColorBlindRGDesc: "Deuteranopia / Protanopia",
+    udColorBlindBY: "蓝黄色盲", udColorBlindBYDesc: "Tritanopia",
+    udColorBlindAll: "全色盲", udColorBlindAllDesc: "Achromatopsia（灰度）",
     termsErr: "请先接受条款和隐私政策",
     nationalIdErr: "身份证号码必须是13位数字",
   },
@@ -72,7 +85,10 @@ const REG_LABELS: Record<Lang, {
     udHearing: "श्रवण बाधित", udHearingDesc: "कैप्शन और विज़ुअल अलर्ट दिखाएं",
     udAutism: "ऑटिज़्म", udAutismDesc: "एनिमेशन कम करें, सरल UI",
     udOther: "अन्य", udOtherDesc: "अतिरिक्त कस्टमाइज़ेशन",
-    udTTS: "टेक्स्ट-टू-स्पीच", udReduceUI: "UI कम करें", udColorBlind: "कलर ब्लाइंड मोड",
+    udTTS: "टेक्स्ट-टू-स्पीच", udReduceUI: "UI कम करें",
+    udColorBlindRG: "लाल-हरा वर्णांध", udColorBlindRGDesc: "Deuteranopia / Protanopia",
+    udColorBlindBY: "नीला-पीला वर्णांध", udColorBlindBYDesc: "Tritanopia",
+    udColorBlindAll: "पूर्ण वर्णांध", udColorBlindAllDesc: "Achromatopsia (ग्रेस्केल)",
     termsErr: "कृपया पहले शर्तें और गोपनीयता नीति स्वीकार करें",
     nationalIdErr: "राष्ट्रीय आईडी 13 अंकों की होनी चाहिए",
   },
@@ -96,7 +112,9 @@ export default function RegisterPage() {
   const [udOther, setUdOther] = useState(false);
   const [udOtherTTS, setUdOtherTTS] = useState(false);
   const [udOtherReduceUI, setUdOtherReduceUI] = useState(false);
-  const [udOtherColorBlind, setUdOtherColorBlind] = useState(false);
+  const [udColorBlindRG, setUdColorBlindRG] = useState(false);
+  const [udColorBlindBY, setUdColorBlindBY] = useState(false);
+  const [udColorBlindAll, setUdColorBlindAll] = useState(false);
 
   // Apply UD classes live as user toggles
   useEffect(() => { document.documentElement.classList.toggle("ud-visual", udVisual); }, [udVisual]);
@@ -104,7 +122,18 @@ export default function RegisterPage() {
   useEffect(() => { document.documentElement.classList.toggle("ud-autism", udAutism); }, [udAutism]);
   useEffect(() => { document.documentElement.classList.toggle("ud-other-tts", udOtherTTS); }, [udOtherTTS]);
   useEffect(() => { document.documentElement.classList.toggle("ud-other-reduce-ui", udOtherReduceUI); }, [udOtherReduceUI]);
-  useEffect(() => { document.documentElement.classList.toggle("ud-other-colorblind", udOtherColorBlind); }, [udOtherColorBlind]);
+  useEffect(() => {
+    document.documentElement.classList.toggle("ud-colorblind-rg", udColorBlindRG);
+    if (udColorBlindRG) { setUdColorBlindBY(false); setUdColorBlindAll(false); }
+  }, [udColorBlindRG]);
+  useEffect(() => {
+    document.documentElement.classList.toggle("ud-colorblind-by", udColorBlindBY);
+    if (udColorBlindBY) { setUdColorBlindRG(false); setUdColorBlindAll(false); }
+  }, [udColorBlindBY]);
+  useEffect(() => {
+    document.documentElement.classList.toggle("ud-colorblind-all", udColorBlindAll);
+    if (udColorBlindAll) { setUdColorBlindRG(false); setUdColorBlindBY(false); }
+  }, [udColorBlindAll]);
 
   function update(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -117,7 +146,9 @@ export default function RegisterPage() {
     localStorage.setItem("ud_other", udOther ? "1" : "0");
     localStorage.setItem("ud_other_tts", udOtherTTS ? "1" : "0");
     localStorage.setItem("ud_other_reduce_ui", udOtherReduceUI ? "1" : "0");
-    localStorage.setItem("ud_other_colorblind", udOtherColorBlind ? "1" : "0");
+    localStorage.setItem("ud_colorblind_rg", udColorBlindRG ? "1" : "0");
+    localStorage.setItem("ud_colorblind_by", udColorBlindBY ? "1" : "0");
+    localStorage.setItem("ud_colorblind_all", udColorBlindAll ? "1" : "0");
   }
 
   async function handleRegister(e: React.FormEvent) {
@@ -155,6 +186,8 @@ export default function RegisterPage() {
       </div>
     );
   }
+
+  const ttsActive = udVisual || udOtherTTS;
 
   return (
     <>
@@ -266,9 +299,8 @@ export default function RegisterPage() {
           {udOther && (
             <div className="ml-4 space-y-1.5 border-l-2 border-brand-blue/20 pl-3">
               {[
-                { val: udOtherTTS,        set: setUdOtherTTS,        icon: Mic,     label: L.udTTS },
-                { val: udOtherReduceUI,   set: setUdOtherReduceUI,   icon: Layers,  label: L.udReduceUI },
-                { val: udOtherColorBlind, set: setUdOtherColorBlind, icon: Palette, label: L.udColorBlind },
+                { val: udOtherTTS,      set: setUdOtherTTS,      icon: Mic,     label: L.udTTS },
+                { val: udOtherReduceUI, set: setUdOtherReduceUI, icon: Layers,  label: L.udReduceUI },
               ].map(({ val, set, icon: Icon, label }) => (
                 <button key={label} type="button" onClick={() => set(!val)}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-left ${val ? "border-brand-blue/40 bg-brand-blue/5" : "border-gray-100 bg-white hover:border-brand-blue/20"}`}>
@@ -277,6 +309,28 @@ export default function RegisterPage() {
                     <Icon className="w-3 h-3" />
                   </div>
                   <p className={`text-xs font-bold flex-1 ${val ? "text-brand-navy" : "text-gray-600"}`}>{label}</p>
+                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${val ? "border-brand-blue bg-brand-blue" : "border-gray-300"}`}>
+                    {val && <Check className="w-2 h-2 text-white" />}
+                  </div>
+                </button>
+              ))}
+              {/* Color blind sub-options */}
+              <p className="text-[10px] text-gray-400 px-1 pt-1">{L.udColorBlindRG.split(" ")[0] === "ตาบอดสี" ? "ตาบอดสี" : "Color Blind"}</p>
+              {[
+                { val: udColorBlindRG,  set: setUdColorBlindRG,  label: L.udColorBlindRG,  desc: L.udColorBlindRGDesc },
+                { val: udColorBlindBY,  set: setUdColorBlindBY,  label: L.udColorBlindBY,  desc: L.udColorBlindBYDesc },
+                { val: udColorBlindAll, set: setUdColorBlindAll, label: L.udColorBlindAll, desc: L.udColorBlindAllDesc },
+              ].map(({ val, set, label, desc }) => (
+                <button key={label} type="button" onClick={() => set(!val)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-left ${val ? "border-brand-blue/40 bg-brand-blue/5" : "border-gray-100 bg-white hover:border-brand-blue/20"}`}>
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${val ? "text-white" : "bg-gray-100 text-gray-400"}`}
+                    style={val ? { background: "linear-gradient(135deg,#5478FF,#53CBF3)" } : {}}>
+                    <Palette className="w-3 h-3" />
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-xs font-bold ${val ? "text-brand-navy" : "text-gray-600"}`}>{label}</p>
+                    <p className="text-[10px] text-gray-400">{desc}</p>
+                  </div>
                   <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${val ? "border-brand-blue bg-brand-blue" : "border-gray-300"}`}>
                     {val && <Check className="w-2 h-2 text-white" />}
                   </div>
@@ -297,6 +351,9 @@ export default function RegisterPage() {
         {t(lang, "reg_has_account")}{" "}
         <Link href="/login" className="text-brand-blue font-semibold hover:underline">{t(lang, "reg_login")}</Link>
       </p>
+
+      {/* TTS widget — mount เมื่อ visual หรือ TTS เปิดอยู่ */}
+      {ttsActive && <VisualAccessibility lang={lang} />}
     </>
   );
 }
