@@ -74,6 +74,7 @@ export default function I18nDashboard({ username, trips: initialTrips, orders: i
   const [selectedUni, setSelectedUni] = useState<string>("all");
   const [trips, setTrips] = useState<any[]>(initialTrips);
   const [orders, setOrders] = useState<any[]>(initialOrders);
+  const [activeOrders, setActiveOrders] = useState<any[]>(allActiveOrders);
   const [sortedTrips, setSortedTrips] = useState<any[]>(initialTrips);
 
   // Realtime: trips

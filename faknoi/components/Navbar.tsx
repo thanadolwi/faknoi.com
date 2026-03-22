@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { ShoppingBag, LayoutDashboard, MapPin, ClipboardList, Wallet, AlertTriangle, LogOut, User, Settings } from "lucide-react";
+import { ShoppingBag, LayoutDashboard, MapPin, ClipboardList, Wallet, AlertTriangle, LogOut, User, Settings, Bell, X } from "lucide-react";
 import clsx from "clsx";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
@@ -19,6 +19,7 @@ export default function Navbar({ username }: { username: string }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [totalUnread, setTotalUnread] = useState(0);
   const [currentUserId, setCurrentUserId] = useState("");
+  const [reportMsgPopup, setReportMsgPopup] = useState<{ subject: string; message: string } | null>(null);
 
   // Reset unread เมื่ออยู่ในหน้า orders หรือ order detail
   useEffect(() => {
@@ -107,6 +108,23 @@ export default function Navbar({ username }: { username: string }) {
     return () => { cleanup.then((fn) => fn && fn()); };
   }, [currentUserId]);
 
+  // Admin: subscribe to new report messages from users
+  useEffect(() => {
+    if (!isAdmin || !currentUserId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`admin-report-msg-notify-${currentUserId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "report_messages" }, async (payload) => {
+        if (payload.new.sender_id === currentUserId) return; // ignore own messages
+        const supabase2 = createClient();
+        const { data: rep } = await supabase2.from("reports").select("subject").eq("id", payload.new.report_id).single();
+        setReportMsgPopup({ subject: rep?.subject || "รายงาน", message: payload.new.message });
+        setTimeout(() => setReportMsgPopup(null), 6000);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [isAdmin, currentUserId]);
+
   const navItems = isAdmin ? [
     { href: "/admin",         label: "หน้าหลัก",  icon: LayoutDashboard, emoji: "🏠",  unread: 0 },
     { href: "/admin/users",   label: "ผู้ใช้งาน", icon: User,             emoji: "👤",  unread: 0 },
@@ -138,6 +156,21 @@ export default function Navbar({ username }: { username: string }) {
 
   return (
     <>
+      {/* Report message popup (admin) */}
+      {reportMsgPopup && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] w-[90vw] max-w-sm bg-brand-navy text-white rounded-3xl shadow-blue-md px-4 py-3 flex items-start gap-3 animate-pop">
+          <Bell className="w-5 h-5 flex-shrink-0 mt-0.5 text-brand-yellow" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-black text-brand-yellow">💬 ผู้ใช้ตอบกลับรายงาน</p>
+            <p className="text-xs font-bold opacity-80 truncate">{reportMsgPopup.subject}</p>
+            <p className="text-sm mt-0.5 line-clamp-2">{reportMsgPopup.message}</p>
+          </div>
+          <button onClick={() => setReportMsgPopup(null)} className="flex-shrink-0 opacity-70 hover:opacity-100">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Desktop */}
       <header className="hidden md:block bg-white border-b border-gray-100 sticky top-0 z-50"
         style={{boxShadow:"0 2px 12px rgba(84,120,255,0.06)"}}>

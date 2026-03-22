@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, ChevronDown, MessageCircle, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -121,7 +121,21 @@ function AdminReportCard({ report, adminId, onStatusChange }: { report: any; adm
   const [messages, setMessages] = useState<any[]>([]);
   const [msgText, setMsgText] = useState("");
   const [sending, setSending] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
   const s = statusMeta[report.report_status] || statusMeta.pending;
+
+  // Realtime chat subscription
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`report-chat-admin-${report.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "report_messages", filter: `report_id=eq.${report.id}` }, (payload) => {
+        setMessages((prev) => [...prev, payload.new as any]);
+        setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [report.id]);
 
   async function loadMessages() {
     const supabase = createClient();
@@ -131,6 +145,7 @@ function AdminReportCard({ report, adminId, onStatusChange }: { report: any; adm
       .eq("report_id", report.id)
       .order("created_at", { ascending: true });
     setMessages(data || []);
+    setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   }
 
   async function toggleChat() {
@@ -148,7 +163,6 @@ function AdminReportCard({ report, adminId, onStatusChange }: { report: any; adm
       message: msgText.trim(),
     });
     setMsgText("");
-    await loadMessages();
     setSending(false);
   }
 
@@ -208,6 +222,7 @@ function AdminReportCard({ report, adminId, onStatusChange }: { report: any; adm
                 </div>
               </div>
             ))}
+            <div ref={chatBottomRef} />
           </div>
           <div className="flex gap-2">
             <input type="text" className="input-field flex-1 text-sm" placeholder="พิมพ์ข้อความ..."

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { AlertTriangle, Upload, ImageIcon, CheckCircle, X, Clock, GraduationCap } from "lucide-react";
+import { AlertTriangle, Upload, ImageIcon, CheckCircle, X, Clock, GraduationCap, MessageCircle, ChevronDown, ChevronUp, Bell } from "lucide-react";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
 import { UNIVERSITIES } from "@/lib/universities";
@@ -35,6 +35,8 @@ export default function ReportForm() {
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [universityId, setUniversityId] = useState("");
   const [userUnis, setUserUnis] = useState<{ id: string; shortName: string }[]>([]);
+  const [currentUserId, setCurrentUserId] = useState("");
+  const [newMsgPopup, setNewMsgPopup] = useState<{ reportSubject: string; message: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export default function ReportForm() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       userId = user?.id;
+      setCurrentUserId(user?.id || "");
       // Load report history
       const { data } = await supabase
         .from("reports")
@@ -81,6 +84,15 @@ export default function ReportForm() {
         setHistory((prev) =>
           prev.map((r) => r.id === payload.new.id ? { ...r, ...payload.new } : r)
         );
+      })
+      // Realtime: new message from admin → show popup
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "report_messages" }, async (payload) => {
+        if (!userId || payload.new.sender_id === userId) return;
+        // find report subject
+        const supabase2 = createClient();
+        const { data: rep } = await supabase2.from("reports").select("subject").eq("id", payload.new.report_id).single();
+        setNewMsgPopup({ reportSubject: rep?.subject || "รายงาน", message: payload.new.message });
+        setTimeout(() => setNewMsgPopup(null), 6000);
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -134,6 +146,21 @@ export default function ReportForm() {
 
   return (
     <div className="max-w-lg mx-auto space-y-6 pb-10">
+      {/* Admin message popup */}
+      {newMsgPopup && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] w-[90vw] max-w-sm bg-brand-blue text-white rounded-3xl shadow-blue-md px-4 py-3 flex items-start gap-3 animate-pop">
+          <Bell className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-black">💬 แอดมินตอบกลับรายงาน</p>
+            <p className="text-xs font-bold opacity-80 truncate">{newMsgPopup.reportSubject}</p>
+            <p className="text-sm mt-0.5 line-clamp-2">{newMsgPopup.message}</p>
+          </div>
+          <button onClick={() => setNewMsgPopup(null)} className="flex-shrink-0 opacity-70 hover:opacity-100">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       <div>
         <h1 className="text-xl font-black text-brand-navy">{t(lang, "rf_title")}</h1>
         <p className="text-sm text-gray-400 mt-0.5">{t(lang, "rf_subtitle")}</p>
@@ -265,21 +292,122 @@ export default function ReportForm() {
             {history.map((r) => {
               const s = getStatusLabel(lang, r.report_status);
               return (
-                <div key={r.id} className="card space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-black text-brand-navy text-sm">{r.subject}</p>
-                    <span className={`pill ${s.color} flex-shrink-0`}>{s.emoji} {t(lang, s.labelKey)}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 font-medium line-clamp-2">{r.body}</p>
-                  <p className="text-xs text-gray-300 font-medium">
-                    {new Date(r.created_at).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" })}
-                  </p>
-                </div>
+                <ReportHistoryCard key={r.id} report={r} lang={lang} currentUserId={currentUserId} statusMeta={s} />
               );
             })}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ReportHistoryCard({ report, lang, currentUserId, statusMeta }: {
+  report: any; lang: import("@/lib/LangContext").Lang; currentUserId: string;
+  statusMeta: { labelKey: string; color: string; emoji: string };
+}) {
+  const [showChat, setShowChat] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [msgText, setMsgText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // Realtime chat
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`report-user-chat-${report.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "report_messages", filter: `report_id=eq.${report.id}` }, (payload) => {
+        setMessages((prev) => [...prev, payload.new as any]);
+        if (payload.new.sender_id !== currentUserId) {
+          setUnread((n) => n + 1);
+        }
+        setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [report.id, currentUserId]);
+
+  async function loadMessages() {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("report_messages")
+      .select("*")
+      .eq("report_id", report.id)
+      .order("created_at", { ascending: true });
+    setMessages(data || []);
+    setUnread(0);
+    setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+  }
+
+  async function toggleChat() {
+    if (!showChat) await loadMessages();
+    else setUnread(0);
+    setShowChat(!showChat);
+  }
+
+  async function sendMessage() {
+    if (!msgText.trim() || !currentUserId) return;
+    setSending(true);
+    const supabase = createClient();
+    await supabase.from("report_messages").insert({
+      report_id: report.id,
+      sender_id: currentUserId,
+      message: msgText.trim(),
+    });
+    setMsgText("");
+    setSending(false);
+  }
+
+  return (
+    <div className="card space-y-2">
+      <div className="flex items-start justify-between gap-2">
+        <p className="font-black text-brand-navy text-sm">{report.subject}</p>
+        <span className={`pill ${statusMeta.color} flex-shrink-0`}>{statusMeta.emoji} {t(lang, statusMeta.labelKey)}</span>
+      </div>
+      <p className="text-xs text-gray-500 font-medium line-clamp-2">{report.body}</p>
+      <p className="text-xs text-gray-300 font-medium">
+        {new Date(report.created_at).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" })}
+      </p>
+
+      {/* Chat toggle */}
+      <button onClick={toggleChat}
+        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 transition-colors relative">
+        <MessageCircle className="w-3.5 h-3.5 text-brand-blue" />
+        แชทกับแอดมิน
+        {unread > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black px-1 py-0.5 rounded-full min-w-[16px] text-center leading-none">
+            {unread}
+          </span>
+        )}
+        {showChat ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+      </button>
+
+      {showChat && (
+        <div className="border-t border-gray-100 pt-2 space-y-2">
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {messages.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-3">ยังไม่มีข้อความ</p>
+            ) : messages.map((m) => (
+              <div key={m.id} className={`flex ${m.sender_id === currentUserId ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-xs ${m.sender_id === currentUserId ? "bg-brand-blue text-white" : "bg-gray-100 text-gray-800"}`}>
+                  {m.sender_id !== currentUserId && <p className="text-[10px] font-black text-brand-blue mb-0.5">แอดมิน</p>}
+                  {m.message}
+                </div>
+              </div>
+            ))}
+            <div ref={chatBottomRef} />
+          </div>
+          <div className="flex gap-2">
+            <input type="text" className="input-field flex-1 text-xs py-2" placeholder="พิมพ์ข้อความ..."
+              value={msgText} onChange={(e) => setMsgText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} />
+            <button onClick={sendMessage} disabled={sending || !msgText.trim()}
+              className="btn-primary px-3 text-xs py-2">ส่ง</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
