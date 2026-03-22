@@ -20,6 +20,7 @@ interface Props {
   myOrders: Order[];
   shopperOrders: Order[];
   statusLabel: Record<string, { label: string; color: string }>;
+  currentUserId?: string;
 }
 
 function OrderCard({ order, statusLabel, showBuyer }: { order: Order; statusLabel: Props["statusLabel"]; showBuyer?: boolean }) {
@@ -55,7 +56,7 @@ function OrderCard({ order, statusLabel, showBuyer }: { order: Order; statusLabe
   );
 }
 
-export default function OrderTabs({ myOrders, shopperOrders, statusLabel }: Props) {
+export default function OrderTabs({ myOrders, shopperOrders, statusLabel, currentUserId }: Props) {
   const [tab, setTab] = useState<"my" | "shopper">("my");
   const { lang } = useLang();
 

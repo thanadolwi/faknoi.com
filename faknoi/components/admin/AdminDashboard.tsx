@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Users, MapPin, Wallet, TrendingUp, ChevronDown, ArrowRight, Clock, ShoppingBag, Store, Flame } from "lucide-react";
+import { Users, MapPin, Wallet, TrendingUp, ChevronDown, ArrowRight, Clock, ShoppingBag, Store, Flame, Accessibility } from "lucide-react";
 import { UNIVERSITIES, getUniShortNameById, getZoneNameByThai } from "@/lib/universities";
 
 interface ZoneByUni { uniId: string; uniName: string; zones: [string, number][]; }
@@ -17,6 +17,13 @@ interface Insights {
   totalRecent: number;
 }
 
+interface AccessibilityInsights {
+  ordersByMode: Record<string, number>;
+  tripsByMode: Record<string, number>;
+  uniAccessOrders: { uniId: string; uniName: string; modes: Record<string, number> }[];
+  uniAccessTrips: { uniId: string; uniName: string; modes: Record<string, number> }[];
+}
+
 interface Props {
   userCount: number;
   openTrips: any[];
@@ -26,6 +33,7 @@ interface Props {
   areaStatuses: any[];
   universities: typeof UNIVERSITIES;
   insights: Insights;
+  accessibilityInsights: AccessibilityInsights;
 }
 
 const UNI_COLORS = [
@@ -39,7 +47,7 @@ const UNI_COLORS = [
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
 function HourLabel(h: number) { const ampm = h < 12 ? "AM" : "PM"; const h12 = h % 12 || 12; return `${h12}:00 ${ampm}`; }
 
-export default function AdminDashboard({ userCount, openTrips, slipsPending, slipsVerified, slipsUpdated, areaStatuses, universities, insights }: Props) {
+export default function AdminDashboard({ userCount, openTrips, slipsPending, slipsVerified, slipsUpdated, areaStatuses, universities, insights, accessibilityInsights }: Props) {
   const [selectedUni, setSelectedUni] = useState("all");
   const [insightUni, setInsightUni] = useState("all");
 
@@ -330,6 +338,102 @@ export default function AdminDashboard({ userCount, openTrips, slipsPending, sli
               </div>
             );
           })()}
+        </div>
+      )}
+      {/* Accessibility Breakdown */}
+      <AccessibilityBreakdown insights={accessibilityInsights} insightUni={insightUni} />
+
+    </div>
+  );
+}
+
+const MODE_META: Record<string, { label: string; emoji: string; color: string; bar: string }> = {
+  normal:  { label: "คนทั่วไป",           emoji: "🧑",  color: "bg-gray-100 text-gray-700",         bar: "linear-gradient(90deg,#94a3b8,#64748b)" },
+  visual:  { label: "ผู้พิการทางสายตา",   emoji: "👁️",  color: "bg-purple-100 text-purple-700",     bar: "linear-gradient(90deg,#a78bfa,#7c3aed)" },
+  hearing: { label: "ผู้พิการทางการได้ยิน", emoji: "👂", color: "bg-blue-100 text-blue-700",         bar: "linear-gradient(90deg,#60a5fa,#2563eb)" },
+  autism:  { label: "ออทิสติก",            emoji: "🧩",  color: "bg-yellow-100 text-yellow-700",     bar: "linear-gradient(90deg,#fbbf24,#d97706)" },
+  other:   { label: "อื่นๆ (UD)",          emoji: "♿",  color: "bg-green-100 text-green-700",       bar: "linear-gradient(90deg,#34d399,#059669)" },
+};
+
+function AccessibilityBreakdown({
+  insights,
+  insightUni,
+}: {
+  insights: AccessibilityInsights;
+  insightUni: string;
+}) {
+  const totalOrders = Object.values(insights.ordersByMode).reduce((s, v) => s + v, 0);
+  const totalTrips = Object.values(insights.tripsByMode).reduce((s, v) => s + v, 0);
+  if (totalOrders === 0 && totalTrips === 0) return null;
+
+  // filter by uni if selected
+  const uniOrders = insightUni === "all"
+    ? insights.ordersByMode
+    : insights.uniAccessOrders.find((u) => u.uniId === insightUni)?.modes || {};
+  const uniTrips = insightUni === "all"
+    ? insights.tripsByMode
+    : insights.uniAccessTrips.find((u) => u.uniId === insightUni)?.modes || {};
+
+  const totalUniOrders = Object.values(uniOrders).reduce((s, v) => s + v, 0);
+  const totalUniTrips = Object.values(uniTrips).reduce((s, v) => s + v, 0);
+
+  return (
+    <div className="card p-4 space-y-4">
+      <div className="flex items-center gap-1.5">
+        <Accessibility className="w-3.5 h-3.5 text-brand-blue" />
+        <span className="text-xs font-black text-brand-navy">Universal Design Insights</span>
+      </div>
+      <p className="text-[10px] text-gray-400 -mt-2">อิงจากโหมดที่ผู้ใช้เปิดอยู่ ณ เวลาที่เปิดทริป/สั่งออเดอร์</p>
+
+      {/* Orders breakdown */}
+      {totalUniOrders > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider">ออเดอร์ ({totalUniOrders})</p>
+          {Object.entries(MODE_META).map(([mode, meta]) => {
+            const count = uniOrders[mode] || 0;
+            if (count === 0) return null;
+            const pct = Math.round((count / totalUniOrders) * 100);
+            return (
+              <div key={mode} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg ${meta.color}`}>
+                    {meta.emoji} {meta.label}
+                  </span>
+                  <span className="text-xs font-black text-brand-navy">{count} <span className="text-gray-400 font-normal">({pct}%)</span></span>
+                </div>
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${pct}%`, background: meta.bar }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Trips breakdown */}
+      {totalUniTrips > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider">ทริป ({totalUniTrips})</p>
+          {Object.entries(MODE_META).map(([mode, meta]) => {
+            const count = uniTrips[mode] || 0;
+            if (count === 0) return null;
+            const pct = Math.round((count / totalUniTrips) * 100);
+            return (
+              <div key={mode} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg ${meta.color}`}>
+                    {meta.emoji} {meta.label}
+                  </span>
+                  <span className="text-xs font-black text-brand-navy">{count} <span className="text-gray-400 font-normal">({pct}%)</span></span>
+                </div>
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${pct}%`, background: meta.bar }} />
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

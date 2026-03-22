@@ -125,6 +125,15 @@ export default function CreateTripPage() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
+    // detect active accessibility mode at time of trip creation
+    const accessibilityMode = (() => {
+      if (localStorage.getItem("ud_visual") === "1") return "visual";
+      if (localStorage.getItem("ud_hearing") === "1") return "hearing";
+      if (localStorage.getItem("ud_autism") === "1") return "autism";
+      if (localStorage.getItem("ud_other") === "1") return "other";
+      return "normal";
+    })();
+
     const { error: err } = await supabase.from("trips").insert({
       shopper_id: user.id, university_id: selectedUniId || null,
       origin_zone: form.origin_zone, destination_zone: form.destination_zone,
@@ -135,6 +144,7 @@ export default function CreateTripPage() {
       origin_lat: originPin?.lat ?? null, origin_lng: originPin?.lng ?? null,
       destination_lat: destPin?.lat ?? null, destination_lng: destPin?.lng ?? null,
       estimated_delivery_time: form.estimated_delivery_time ? new Date(form.estimated_delivery_time).toISOString() : null,
+      accessibility_mode: accessibilityMode,
     });
     if (err) { setError(t(lang, "ct_err_generic")); setLoading(false); return; }
     router.push("/trips");

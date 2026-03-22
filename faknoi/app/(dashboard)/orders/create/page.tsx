@@ -52,10 +52,19 @@ function CreateOrderForm() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
 
+    const accessibilityMode = (() => {
+      if (localStorage.getItem("ud_visual") === "1") return "visual";
+      if (localStorage.getItem("ud_hearing") === "1") return "hearing";
+      if (localStorage.getItem("ud_autism") === "1") return "autism";
+      if (localStorage.getItem("ud_other") === "1") return "other";
+      return "normal";
+    })();
+
     const { error: insertError } = await supabase.from("orders").insert({
       trip_id: tripId, buyer_id: user.id, items: validItems,
       estimated_price: parseFloat(estimatedPrice) || 0,
       status: "pending", payment_confirmed: false,
+      accessibility_mode: accessibilityMode,
     });
 
     if (insertError) { setError(t(lang, "co_err_generic")); setLoading(false); return; }
