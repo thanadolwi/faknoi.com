@@ -331,6 +331,7 @@ const extra: Record<Lang, Record<string, string>> = {
     chat_view_order: "ดูออเดอร์",
     // OrderChat
     chat_title: "แชทกับผู้รับหิ้ว",
+    chat_title_shopper: "แชทกับผู้ฝากหิ้ว",
     chat_no_msg: "ยังไม่มีข้อความ เริ่มแชทได้เลย",
     chat_placeholder: "พิมพ์ข้อความ...",
     // OrderStatusActions
@@ -551,6 +552,7 @@ const extra: Record<Lang, Record<string, string>> = {
     chat_shopper_label: "Shopper",
     chat_view_order: "View Order",
     chat_title: "Chat with Shopper",
+    chat_title_shopper: "Chat with Buyer",
     chat_no_msg: "No messages yet. Start chatting!",
     chat_placeholder: "Type a message...",
     osa_accept: "Accept Order",
@@ -757,6 +759,7 @@ const extra: Record<Lang, Record<string, string>> = {
     chat_shopper_label: "代购",
     chat_view_order: "查看订单",
     chat_title: "与代购聊天",
+    chat_title_shopper: "与买家聊天",
     chat_no_msg: "暂无消息，开始聊天吧！",
     chat_placeholder: "输入消息...",
     osa_accept: "接受订单",
@@ -963,6 +966,7 @@ const extra: Record<Lang, Record<string, string>> = {
     chat_shopper_label: "शॉपर",
     chat_view_order: "ऑर्डर देखें",
     chat_title: "शॉपर से चैट",
+    chat_title_shopper: "खरीदार से चैट",
     chat_no_msg: "अभी कोई संदेश नहीं। चैट शुरू करें!",
     chat_placeholder: "संदेश टाइप करें...",
     osa_accept: "ऑर्डर स्वीकार करें",

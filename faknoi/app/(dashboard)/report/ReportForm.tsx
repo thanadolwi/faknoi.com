@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { AlertTriangle, Upload, ImageIcon, CheckCircle, X, Clock } from "lucide-react";
+import { AlertTriangle, Upload, ImageIcon, CheckCircle, X, Clock, GraduationCap } from "lucide-react";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
+import { UNIVERSITIES } from "@/lib/universities";
 
 const MAX_SIZE = 1024 * 1024;
 
@@ -32,12 +33,15 @@ export default function ReportForm() {
   const [error, setError]     = useState("");
   const [history, setHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [universityId, setUniversityId] = useState("");
+  const [userUnis, setUserUnis] = useState<{ id: string; shortName: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function loadHistory() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
+      // Load report history
       const { data } = await supabase
         .from("reports")
         .select("id, subject, body, role, report_status, created_at")
@@ -45,6 +49,25 @@ export default function ReportForm() {
         .order("created_at", { ascending: false });
       setHistory(data || []);
       setLoadingHistory(false);
+      // Load universities from user's trips (as buyer or shopper)
+      const { data: buyerOrders } = await supabase
+        .from("orders")
+        .select("trips(university_id)")
+        .eq("buyer_id", user?.id);
+      const { data: shopperTrips } = await supabase
+        .from("trips")
+        .select("university_id")
+        .eq("shopper_id", user?.id);
+      const uniIds = new Set<string>();
+      for (const o of buyerOrders || []) {
+        const uid = (o as any).trips?.university_id;
+        if (uid) uniIds.add(uid);
+      }
+      for (const t of shopperTrips || []) {
+        if (t.university_id) uniIds.add(t.university_id);
+      }
+      const unis = UNIVERSITIES.filter((u) => uniIds.has(u.id)).map((u) => ({ id: u.id, shortName: u.shortName }));
+      setUserUnis(unis);
     }
     loadHistory();
   }, [success]);
@@ -83,6 +106,7 @@ export default function ReportForm() {
       phone: phone.trim(), gmail: gmail.trim(),
       image_url: imageUrl,
       report_status: "pending",
+      university_id: universityId || null,
     });
     if (insertErr) { setError(t(lang, "rf_send_fail") + ": " + insertErr.message); setLoading(false); return; }
     setSuccess(true);
@@ -124,6 +148,31 @@ export default function ReportForm() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* University selector */}
+          <div className="card space-y-2">
+            <label className="text-sm font-black text-brand-navy flex items-center gap-1.5">
+              <GraduationCap className="w-4 h-4 text-brand-blue" />
+              พื้นที่มหาวิทยาลัย
+            </label>
+            <div className="relative">
+              <select
+                value={universityId}
+                onChange={(e) => setUniversityId(e.target.value)}
+                className="input-field text-sm appearance-none pr-8"
+              >
+                <option value="">เลือกมหาวิทยาลัย (ไม่บังคับ)</option>
+                {userUnis.length > 0
+                  ? userUnis.map((u) => <option key={u.id} value={u.id}>{u.shortName}</option>)
+                  : UNIVERSITIES.map((u) => <option key={u.id} value={u.id}>{u.shortName}</option>)
+                }
+              </select>
+              <GraduationCap className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+            {userUnis.length > 0 && (
+              <p className="text-xs text-gray-400">แสดงเฉพาะมหาวิทยาลัยที่คุณมีทริป/ออเดอร์</p>
+            )}
           </div>
 
           <div className="card space-y-2">

@@ -259,3 +259,75 @@ create policy "orders_update" on public.orders for update using (
   auth.uid() = (select shopper_id from public.trips where id = trip_id) or
   exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
 );
+
+-- ===== Display IDs (S-series for trips, B-series for orders) =====
+
+-- Counter table per university
+create table if not exists public.display_id_counters (
+  university_id text not null,
+  entity_type text not null check (entity_type in ('trip', 'order')),
+  last_value int default 0 not null,
+  primary key (university_id, entity_type)
+);
+
+alter table public.display_id_counters enable row level security;
+create policy "counters_select" on public.display_id_counters for select using (true);
+
+-- Add display_id columns
+alter table public.trips add column if not exists display_id text;
+alter table public.orders add column if not exists display_id text;
+
+-- Function: get next display ID for a university+type
+create or replace function public.next_display_id(p_university_id text, p_type text)
+returns int as $$
+declare
+  v_next int;
+begin
+  insert into public.display_id_counters (university_id, entity_type, last_value)
+  values (p_university_id, p_type, 1)
+  on conflict (university_id, entity_type)
+  do update set last_value = display_id_counters.last_value + 1
+  returning last_value into v_next;
+  return v_next;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger: auto-assign display_id on trip insert
+create or replace function public.assign_trip_display_id()
+returns trigger as $$
+declare
+  v_uni text;
+  v_num int;
+begin
+  v_uni := coalesce(new.university_id, 'default');
+  v_num := public.next_display_id(v_uni, 'trip');
+  new.display_id := 'S' || v_num::text;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists trg_trip_display_id on public.trips;
+create trigger trg_trip_display_id
+  before insert on public.trips
+  for each row execute function public.assign_trip_display_id();
+
+-- Trigger: auto-assign display_id on order insert
+create or replace function public.assign_order_display_id()
+returns trigger as $$
+declare
+  v_uni text;
+  v_num int;
+begin
+  -- get university_id from the trip
+  select university_id into v_uni from public.trips where id = new.trip_id;
+  v_uni := coalesce(v_uni, 'default');
+  v_num := public.next_display_id(v_uni, 'order');
+  new.display_id := 'B' || v_num::text;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists trg_order_display_id on public.orders;
+create trigger trg_order_display_id
+  before insert on public.orders
+  for each row execute function public.assign_order_display_id();

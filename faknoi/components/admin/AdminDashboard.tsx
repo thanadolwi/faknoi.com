@@ -2,8 +2,20 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Users, MapPin, Wallet, TrendingUp, ChevronDown, ArrowRight } from "lucide-react";
-import { UNIVERSITIES } from "@/lib/universities";
+import { Users, MapPin, Wallet, TrendingUp, ChevronDown, ArrowRight, Clock, ShoppingBag, Store, Flame } from "lucide-react";
+import { UNIVERSITIES, getUniShortNameById, getZoneNameByThai } from "@/lib/universities";
+
+interface ZoneByUni { uniId: string; uniName: string; zones: [string, number][]; }
+interface ItemByUni { uniId: string; uniName: string; items: [string, number][]; }
+interface HourByUni { uniId: string; uniName: string; hours: { hour: number; count: number }[]; }
+interface ShopByUni { uniId: string; uniName: string; shops: [string, number][]; }
+interface Insights {
+  topZonesByUni: ZoneByUni[];
+  topItemsByUni: ItemByUni[];
+  topHoursByUni: HourByUni[];
+  topShopsByUni: ShopByUni[];
+  totalRecent: number;
+}
 
 interface Props {
   userCount: number;
@@ -13,10 +25,23 @@ interface Props {
   slipsUpdated: any[];
   areaStatuses: any[];
   universities: typeof UNIVERSITIES;
+  insights: Insights;
 }
 
-export default function AdminDashboard({ userCount, openTrips, slipsPending, slipsVerified, slipsUpdated, areaStatuses, universities }: Props) {
+const UNI_COLORS = [
+  { badge: "bg-brand-blue/10 text-brand-blue", bar: "linear-gradient(90deg,#5478FF,#53CBF3)" },
+  { badge: "bg-brand-cyan/10 text-brand-navy", bar: "linear-gradient(90deg,#53CBF3,#FFDE42)" },
+  { badge: "bg-yellow-100 text-yellow-700",    bar: "linear-gradient(90deg,#FFDE42,#FFB800)" },
+  { badge: "bg-purple-100 text-purple-700",    bar: "linear-gradient(90deg,#a78bfa,#818cf8)" },
+  { badge: "bg-green-100 text-green-700",      bar: "linear-gradient(90deg,#34d399,#10b981)" },
+];
+
+function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function HourLabel(h: number) { const ampm = h < 12 ? "AM" : "PM"; const h12 = h % 12 || 12; return `${h12}:00 ${ampm}`; }
+
+export default function AdminDashboard({ userCount, openTrips, slipsPending, slipsVerified, slipsUpdated, areaStatuses, universities, insights }: Props) {
   const [selectedUni, setSelectedUni] = useState("all");
+  const [insightUni, setInsightUni] = useState("all");
 
   const activeAreas = universities.filter((u) => {
     const s = areaStatuses.find((a) => a.university_id === u.id);
@@ -117,6 +142,194 @@ export default function AdminDashboard({ userCount, openTrips, slipsPending, sli
               </Link>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Insights */}
+      {insights.totalRecent > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-xl bg-brand-blue/10 flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-3.5 h-3.5 text-brand-blue" />
+            </div>
+            <div>
+              <h2 className="font-black text-brand-navy text-sm leading-tight">Insights · 7 วันล่าสุด</h2>
+              <p className="text-xs text-gray-400">{insights.totalRecent} ออเดอร์</p>
+            </div>
+          </div>
+
+          {insights.topZonesByUni.length > 0 && (
+            <div className="relative">
+              <select value={insightUni} onChange={(e) => setInsightUni(e.target.value)}
+                className="w-full appearance-none input-field text-sm font-bold text-brand-navy pr-8">
+                <option value="all">🏫 ทุกมหาวิทยาลัย</option>
+                {insights.topZonesByUni.map((u) => (
+                  <option key={u.uniId} value={u.uniId}>{getUniShortNameById(u.uniId, "th")}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          )}
+
+          {/* Hot Zones */}
+          {(() => {
+            const filtered = insightUni === "all" ? insights.topZonesByUni : insights.topZonesByUni.filter((u) => u.uniId === insightUni);
+            if (!filtered.length) return null;
+            return (
+              <div className="card p-4 space-y-4">
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-brand-blue" />
+                  <span className="text-xs font-black text-brand-navy">โซนฮิต</span>
+                </div>
+                {filtered.map((uni, uniIdx) => {
+                  const maxZone = uni.zones[0]?.[1] || 1;
+                  const color = UNI_COLORS[uniIdx % UNI_COLORS.length];
+                  return (
+                    <div key={uni.uniId} className="space-y-2">
+                      {insightUni === "all" && (
+                        <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
+                          {getUniShortNameById(uni.uniId, "th")}
+                        </span>
+                      )}
+                      {uni.zones.map(([zone, count]) => (
+                        <div key={zone} className="space-y-1 pl-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-gray-600 truncate max-w-[180px]">{getZoneNameByThai(zone, "th")}</span>
+                            <span className="text-xs font-black text-brand-navy">{count}</span>
+                          </div>
+                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-700"
+                              style={{ width: `${(count / maxZone) * 100}%`, background: color.bar }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* Peak Hours */}
+          {(() => {
+            const filtered = insightUni === "all" ? insights.topHoursByUni : insights.topHoursByUni.filter((u) => u.uniId === insightUni);
+            if (!filtered.length) return null;
+            return (
+              <div className="card p-4 space-y-4">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-brand-cyan" />
+                  <span className="text-xs font-black text-brand-navy">ช่วงเวลาฮิต</span>
+                </div>
+                {filtered.map((uni, uniIdx) => {
+                  const color = UNI_COLORS[uniIdx % UNI_COLORS.length];
+                  return (
+                    <div key={uni.uniId} className="space-y-2">
+                      {insightUni === "all" && (
+                        <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
+                          {getUniShortNameById(uni.uniId, "th")}
+                        </span>
+                      )}
+                      {uni.hours.map(({ hour, count }, i) => (
+                        <div key={hour} className="flex items-center gap-2 pl-2">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 ${
+                            i === 0 ? "bg-brand-blue text-white" : i === 1 ? "bg-brand-cyan/20 text-brand-navy" : "bg-gray-100 text-gray-500"
+                          }`}>{hour}</div>
+                          <div className="flex-1">
+                            <p className="text-xs font-bold text-brand-navy">{HourLabel(hour)}</p>
+                            <p className="text-xs text-gray-400">{count} ทริป</p>
+                          </div>
+                          {i === 0 && <Flame className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* Top Items */}
+          {(() => {
+            const filtered = insightUni === "all" ? insights.topItemsByUni : insights.topItemsByUni.filter((u) => u.uniId === insightUni);
+            if (!filtered.length) return null;
+            return (
+              <div className="card p-4 space-y-4">
+                <div className="flex items-center gap-1.5">
+                  <ShoppingBag className="w-3.5 h-3.5 text-brand-blue" />
+                  <span className="text-xs font-black text-brand-navy">เมนูฮิต</span>
+                </div>
+                {filtered.map((uni, uniIdx) => {
+                  const maxItem = uni.items[0]?.[1] || 1;
+                  const color = UNI_COLORS[uniIdx % UNI_COLORS.length];
+                  return (
+                    <div key={uni.uniId} className="space-y-2">
+                      {insightUni === "all" && (
+                        <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
+                          {getUniShortNameById(uni.uniId, "th")}
+                        </span>
+                      )}
+                      {uni.items.map(([item, count], i) => (
+                        <div key={item} className="flex items-center gap-3 pl-2">
+                          <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 ${
+                            i === 0 ? "bg-brand-yellow text-brand-navy" : "bg-gray-100 text-gray-500"
+                          }`}>{i + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-xs font-bold text-brand-navy truncate">{capitalize(item)}</span>
+                              <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{count}×</span>
+                            </div>
+                            <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all duration-700"
+                                style={{ width: `${(count / maxItem) * 100}%`, background: color.bar }} />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* Top Shops */}
+          {(() => {
+            const filtered = insightUni === "all" ? insights.topShopsByUni : insights.topShopsByUni.filter((u) => u.uniId === insightUni);
+            if (!filtered.length) return null;
+            return (
+              <div className="card p-4 space-y-4">
+                <div className="flex items-center gap-1.5">
+                  <Store className="w-3.5 h-3.5 text-brand-cyan" />
+                  <span className="text-xs font-black text-brand-navy">ร้านฮิต</span>
+                </div>
+                {filtered.map((uni, uniIdx) => {
+                  const color = UNI_COLORS[uniIdx % UNI_COLORS.length];
+                  return (
+                    <div key={uni.uniId} className="space-y-2">
+                      {insightUni === "all" && (
+                        <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-lg ${color.badge}`}>
+                          {getUniShortNameById(uni.uniId, "th")}
+                        </span>
+                      )}
+                      <div className="flex flex-wrap gap-2 pl-2">
+                        {uni.shops.map(([shop, count], i) => (
+                          <div key={shop} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold border ${
+                            i === 0 ? "bg-brand-blue/10 border-brand-blue/20 text-brand-blue"
+                            : i === 1 ? "bg-brand-cyan/10 border-brand-cyan/20 text-brand-navy"
+                            : "bg-gray-50 border-gray-100 text-gray-600"
+                          }`}>
+                            {i === 0 && <Flame className="w-3 h-3 text-orange-400" />}
+                            {capitalize(shop)}
+                            <span className="opacity-60">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

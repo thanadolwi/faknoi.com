@@ -63,6 +63,11 @@ export default function I18nOrderDetail({
           <ArrowLeft className="w-5 h-5 text-gray-500" />
         </Link>
         <h1 className="text-xl font-bold text-brand-navy">{t(lang, "od_title")}</h1>
+        {order.display_id && (
+          <span className="ml-auto text-xs font-black text-brand-cyan bg-brand-cyan/10 px-2.5 py-1 rounded-xl">
+            {order.display_id}
+          </span>
+        )}
       </div>
 
       {/* Status Banner */}
@@ -234,7 +239,7 @@ export default function I18nOrderDetail({
 
       {/* Chat */}
       {order.status !== "cancelled" && (isBuyer || isShopper) && (
-        <OrderChat orderId={order.id} currentUserId={userId} currentUsername={username} />
+        <OrderChat orderId={order.id} currentUserId={userId} currentUsername={username} isShopper={isShopper} />
       )}
 
       {/* Actions */}

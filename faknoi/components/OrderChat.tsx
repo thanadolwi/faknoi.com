@@ -22,9 +22,10 @@ interface Props {
   currentUserId: string;
   currentUsername: string;
   embedded?: boolean;
+  isShopper?: boolean;
 }
 
-export default function OrderChat({ orderId, currentUserId, embedded = false }: Props) {
+export default function OrderChat({ orderId, currentUserId, embedded = false, isShopper = false }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -166,7 +167,7 @@ export default function OrderChat({ orderId, currentUserId, embedded = false }: 
       >
         <div className="flex items-center gap-2">
           <MessageCircle className="w-4 h-4 text-brand-blue" />
-          <span className="text-sm font-semibold text-brand-navy">{t(lang, "chat_title")}</span>
+          <span className="text-sm font-semibold text-brand-navy">{t(lang, isShopper ? "chat_title_shopper" : "chat_title")}</span>
           {unread > 0 && (
             <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
               {unread}

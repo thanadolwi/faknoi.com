@@ -94,6 +94,11 @@ export default function AdminTrips() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span className={`pill text-xs ${st.color}`}>{st.label}</span>
+                    {trip.display_id && (
+                      <span className="text-xs font-black text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-lg">
+                        {trip.display_id}
+                      </span>
+                    )}
                     {trip.university_id && (
                       <span className="text-xs text-gray-400 flex items-center gap-1">
                         <GraduationCap className="w-3 h-3" />
@@ -175,9 +180,16 @@ export default function AdminTrips() {
                           return (
                             <div key={order.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-brand-navy truncate">
-                                  @{order.profiles?.username}
-                                </p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="text-xs font-bold text-brand-navy truncate">
+                                    @{order.profiles?.username}
+                                  </p>
+                                  {order.display_id && (
+                                    <span className="text-[10px] font-black text-brand-cyan bg-brand-cyan/10 px-1.5 py-0.5 rounded-lg flex-shrink-0">
+                                      {order.display_id}
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-[10px] text-gray-400">
                                   {itemCount} รายการ{price ? ` · ฿${price}` : ""}
                                 </p>

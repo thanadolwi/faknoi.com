@@ -53,12 +53,16 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "messages", filter: `order_id=eq.${order.id}` },
           (payload) => {
-            // Only count messages from others
+            // Only count messages from others, and only if not already read
             if (payload.new.sender_id !== currentUserId) {
-              setUnreadMap((prev) => ({
-                ...prev,
-                [order.id]: (prev[order.id] || 0) + 1,
-              }));
+              const lastRead = parseInt(localStorage.getItem(`chat-read-${order.id}`) || "0");
+              const msgTime = new Date(payload.new.created_at).getTime();
+              if (msgTime > lastRead) {
+                setUnreadMap((prev) => ({
+                  ...prev,
+                  [order.id]: (prev[order.id] || 0) + 1,
+                }));
+              }
             }
           }
         )
@@ -79,8 +83,9 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
     const isOpen = openId === orderId;
     setOpenId(isOpen ? null : orderId);
     if (!isOpen) {
-      // Clear unread for this order when opening
+      // Clear unread for this order when opening + mark as read
       setUnreadMap((prev) => ({ ...prev, [orderId]: 0 }));
+      localStorage.setItem(`chat-read-${orderId}`, Date.now().toString());
     }
   }
 
@@ -143,7 +148,7 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
               </button>
               {isOpen && (
                 <div className="border-t border-gray-100">
-                  <OrderChat orderId={order.id} currentUserId={currentUserId} currentUsername={currentUsername} embedded />
+                  <OrderChat orderId={order.id} currentUserId={currentUserId} currentUsername={currentUsername} embedded isShopper={isShopper} />
                 </div>
               )}
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Clock, TrendingUp, MapPin, ShoppingBag, Store, Flame, ChevronDown } from "lucide-react";
 import DashboardChats from "./DashboardChats";
@@ -8,6 +8,7 @@ import NearbyTrips from "./NearbyTrips";
 import { getUniShortNameById, getZoneNameByThai } from "@/lib/universities";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
+import { createClient } from "@/lib/supabase/client";
 
 interface ZoneByUni {
   uniId: string;
@@ -68,10 +69,54 @@ const UNI_COLORS = [
   { badge: "bg-green-100 text-green-700",      bar: "linear-gradient(90deg,#34d399,#10b981)" },
 ];
 
-export default function I18nDashboard({ username, trips, orders, allActiveOrders, currentUserId, insights }: Props) {
+export default function I18nDashboard({ username, trips: initialTrips, orders: initialOrders, allActiveOrders, currentUserId, insights }: Props) {
   const { lang } = useLang();
   const [selectedUni, setSelectedUni] = useState<string>("all");
-  const [sortedTrips, setSortedTrips] = useState<any[]>(trips);
+  const [trips, setTrips] = useState<any[]>(initialTrips);
+  const [orders, setOrders] = useState<any[]>(initialOrders);
+  const [sortedTrips, setSortedTrips] = useState<any[]>(initialTrips);
+
+  // Realtime: trips
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("dashboard-trips-realtime")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "trips" }, (payload) => {
+        const updated = payload.new;
+        const hideStatuses = ["delivering", "completed", "cancelled"];
+        if (hideStatuses.includes(updated.status)) {
+          setTrips((prev) => prev.filter((t) => t.id !== updated.id));
+          setSortedTrips((prev) => prev.filter((t) => t.id !== updated.id));
+        } else {
+          setTrips((prev) => prev.map((t) => t.id === updated.id ? { ...t, ...updated } : t));
+          setSortedTrips((prev) => prev.map((t) => t.id === updated.id ? { ...t, ...updated } : t));
+        }
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "trips" }, async (payload) => {
+        const { data } = await supabase.from("trips").select("*, profiles(username)").eq("id", payload.new.id).single();
+        if (data) {
+          setTrips((prev) => [data, ...prev]);
+          setSortedTrips((prev) => [data, ...prev]);
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // Realtime: orders (สถานะออเดอร์ล่าสุด)
+  useEffect(() => {
+    if (!currentUserId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel("dashboard-orders-realtime")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, (payload) => {
+        setOrders((prev) =>
+          prev.map((o) => o.id === payload.new.id ? { ...o, ...payload.new } : o)
+        );
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUserId]);
   const statusLabel: Record<string, { label: string; color: string; emoji: string }> = {
     pending:    { label: t(lang,"status_pending"),    color: "bg-yellow-100 text-yellow-700",  emoji: "⏳" },
     accepted:   { label: t(lang,"status_accepted"),   color: "bg-blue-100 text-blue-700",      emoji: "✅" },

@@ -145,6 +145,11 @@ export default function I18nTripDetail({
             <span className="font-bold text-brand-navy text-lg">{trip.origin_zone}</span>
             <ArrowRight className="w-4 h-4 text-gray-400" />
             <span className="font-bold text-brand-navy text-lg">{trip.destination_zone}</span>
+            {trip.display_id && (
+              <span className="text-xs font-black text-brand-blue bg-brand-blue/10 px-2.5 py-1 rounded-xl">
+                {trip.display_id}
+              </span>
+            )}
           </div>
           <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ${sc.colorClass}`}>
             {t(lang, sc.labelKey)}
@@ -230,7 +235,14 @@ export default function I18nTripDetail({
                 <div key={order.id} className="card space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-brand-navy">@{order.profiles?.username}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-brand-navy">@{order.profiles?.username}</p>
+                        {order.display_id && (
+                          <span className="text-[10px] font-black text-brand-cyan bg-brand-cyan/10 px-1.5 py-0.5 rounded-lg">
+                            {order.display_id}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-400 mt-0.5">
                         {Array.isArray(order.items) ? order.items.length : 0} {t(lang, "td_items_count")}
                         {order.final_price ? ` · ฿${order.final_price}` : order.estimated_price ? ` · ~฿${order.estimated_price}` : ""}
