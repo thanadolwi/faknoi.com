@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, ClipboardList, ShoppingBag } from "lucide-react";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
+import { createClient } from "@/lib/supabase/client";
 
 interface Order {
   id: string;
@@ -56,9 +57,38 @@ function OrderCard({ order, statusLabel, showBuyer }: { order: Order; statusLabe
   );
 }
 
-export default function OrderTabs({ myOrders, shopperOrders, statusLabel, currentUserId }: Props) {
+export default function OrderTabs({ myOrders: initialMyOrders, shopperOrders: initialShopperOrders, statusLabel, currentUserId }: Props) {
   const [tab, setTab] = useState<"my" | "shopper">("my");
+  const [myOrders, setMyOrders] = useState(initialMyOrders);
+  const [shopperOrders, setShopperOrders] = useState(initialShopperOrders);
   const { lang } = useLang();
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("ordertabs-realtime")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, (payload) => {
+        const updated = payload.new;
+        setMyOrders((prev) => prev.map((o) => o.id === updated.id ? { ...o, ...updated } : o));
+        setShopperOrders((prev) => prev.map((o) => o.id === updated.id ? { ...o, ...updated } : o));
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, async (payload) => {
+        const supabase2 = createClient();
+        const { data } = await supabase2.from("orders")
+          .select("*, trips(origin_zone, destination_zone, shopper_id), profiles(username)")
+          .eq("id", payload.new.id).single();
+        if (!data) return;
+        // add to myOrders if buyer, shopperOrders if shopper
+        if (data.buyer_id === currentUserId) {
+          setMyOrders((prev) => [data, ...prev]);
+        }
+        if (data.trips?.shopper_id === currentUserId) {
+          setShopperOrders((prev) => [data, ...prev]);
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUserId]);
 
   return (
     <>

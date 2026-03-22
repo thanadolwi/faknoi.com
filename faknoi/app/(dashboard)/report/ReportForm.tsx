@@ -38,9 +38,11 @@ export default function ReportForm() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    let userId: string | undefined;
     async function loadHistory() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id;
       // Load report history
       const { data } = await supabase
         .from("reports")
@@ -70,6 +72,18 @@ export default function ReportForm() {
       setUserUnis(unis);
     }
     loadHistory();
+
+    // Realtime: update report status in history
+    const supabase = createClient();
+    const channel = supabase
+      .channel("report-form-realtime")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "reports" }, (payload) => {
+        setHistory((prev) =>
+          prev.map((r) => r.id === payload.new.id ? { ...r, ...payload.new } : r)
+        );
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [success]);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {

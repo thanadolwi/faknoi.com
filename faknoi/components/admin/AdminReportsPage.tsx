@@ -54,8 +54,11 @@ export default function AdminReportsPage({ reports: initial, universities, admin
   }
 
   async function updateStatus(reportId: string, newStatus: string) {
-    const supabase = createClient();
-    await supabase.from("reports").update({ report_status: newStatus }).eq("id", reportId);
+    await fetch("/api/admin/reports", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reportId, status: newStatus }),
+    });
     // realtime will update state automatically
   }
 
