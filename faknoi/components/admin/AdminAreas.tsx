@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Loader2, ToggleLeft, ToggleRight, Save } from "lucide-react";
+import { ArrowLeft, Loader2, ToggleLeft, ToggleRight, Save, Search } from "lucide-react";
 import Link from "next/link";
 import type { University } from "@/lib/universities";
 
@@ -14,6 +14,7 @@ interface AreaState {
 export default function AdminAreas({ universities }: { universities: University[] }) {
   const [areas, setAreas] = useState<Record<string, AreaState>>({});
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/areas")
@@ -57,8 +58,22 @@ export default function AdminAreas({ universities }: { universities: University[
         </div>
       </div>
 
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        <input
+          type="text"
+          className="input-field pl-9 text-sm"
+          placeholder="ค้นหามหาวิทยาลัย..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
       <div className="space-y-3">
-        {universities.map((u) => {
+        {universities.filter((u) =>
+          u.name.toLowerCase().includes(search.toLowerCase()) ||
+          u.shortName.toLowerCase().includes(search.toLowerCase())
+        ).map((u) => {
           const area = areas[u.id];
           if (!area) return null;
           return (
