@@ -155,10 +155,11 @@ export default function WalletPage() {
     setAllSlips(json.slips || []);
   }
 
-  const statusBadge: Record<SlipStatus, { label: string; color: string; icon: React.ReactNode }> = {
+  const statusBadge: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
     pending:  { label: "กำลังตรวจสลิปการโอนเงิน", color: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: <Clock className="w-3.5 h-3.5" /> },
     verified: { label: "ตรวจสอบเรียบร้อย",         color: "bg-blue-100 text-blue-700 border-blue-200",     icon: <BadgeCheck className="w-3.5 h-3.5" /> },
     updated:  { label: "อัปเดตข้อมูลเสร็จสิ้น",    color: "bg-green-100 text-green-700 border-green-200",  icon: <CheckCircle className="w-3.5 h-3.5" /> },
+    rejected: { label: "ไม่ผ่านการตรวจสอบ",        color: "bg-red-100 text-red-700 border-red-200",        icon: <AlertCircle className="w-3.5 h-3.5" /> },
   };
 
   if (loading) {
@@ -346,6 +347,15 @@ export default function WalletPage() {
                       </span>
                     </div>
                     <p className="text-xs font-bold text-brand-navy">ยอดชำระ: ฿{Number(slip.amount_paid).toFixed(2)}</p>
+                    {slip.amount_verified != null && (
+                      <p className="text-xs font-bold text-green-700">ยอดที่ยืนยัน: ฿{Number(slip.amount_verified).toFixed(2)}</p>
+                    )}
+                    {slip.verified_note && (
+                      <p className="text-xs text-gray-500">หมายเหตุ: {slip.verified_note}</p>
+                    )}
+                    {slip.rejected_note && (
+                      <p className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-lg border border-red-100">❌ {slip.rejected_note}</p>
+                    )}
                   </div>
                 );
               })}
