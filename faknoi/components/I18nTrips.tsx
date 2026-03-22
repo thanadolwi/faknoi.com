@@ -34,15 +34,34 @@ export default function I18nTrips({ trips: initialTrips }: Props) {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "trips" },
-        (payload) => {
+        async (payload) => {
           const updated = payload.new;
-          // ถ้า completed หรือ cancelled ให้เอาออกจาก list
-          if (updated.status === "completed" || updated.status === "cancelled") {
+          const hideStatuses = ["delivering", "completed", "cancelled"];
+          const showStatuses = ["open", "shopping"];
+
+          if (hideStatuses.includes(updated.status)) {
+            // ซ่อนทริปที่ไม่รับออเดอร์แล้ว
             setTrips((prev) => prev.filter((t) => t.id !== updated.id));
-          } else {
-            setTrips((prev) =>
-              prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t))
-            );
+          } else if (showStatuses.includes(updated.status)) {
+            // ถ้ากลับมาเป็น open/shopping ให้ fetch กลับมาใส่ list
+            setTrips((prev) => {
+              const exists = prev.find((t) => t.id === updated.id);
+              if (exists) {
+                return prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t));
+              } else {
+                // fetch full trip with profile แล้วเพิ่มเข้า list
+                const supabase = createClient();
+                supabase
+                  .from("trips")
+                  .select("*, profiles(username)")
+                  .eq("id", updated.id)
+                  .single()
+                  .then(({ data }) => {
+                    if (data) setTrips((p) => [data, ...p]);
+                  });
+                return prev;
+              }
+            });
           }
         }
       )
