@@ -22,15 +22,15 @@ export default async function AdminPage() {
     { data: slipsVerified },
     { data: slipsUpdated },
     { data: areaStatuses },
-    { data: recentOrders },
   ] = await Promise.all([
     admin.from("profiles").select("*", { count: "exact", head: true }),
-    admin.from("trips").select("id, university_id, status, origin_zone, destination_zone, current_orders, max_orders, profiles(username)").in("status", ["open", "shopping"]),
+    admin.from("trips").select("id, university_id, status, origin_zone, destination_zone, current_orders, max_orders, profiles(username)")
+      .in("status", ["open", "shopping"])
+      .gt("cutoff_time", new Date().toISOString()),
     admin.from("payment_slips").select("id, user_id, university_id, profiles!payment_slips_user_id_fkey(username)").eq("status", "pending"),
     admin.from("payment_slips").select("id, user_id, university_id, profiles!payment_slips_user_id_fkey(username)").eq("status", "verified"),
     admin.from("payment_slips").select("id, user_id, university_id, profiles!payment_slips_user_id_fkey(username)").eq("status", "updated"),
     admin.from("area_status").select("*"),
-    admin.from("orders").select("id, status, created_at, trips(university_id)").order("created_at", { ascending: false }).limit(50),
   ]);
 
   return (

@@ -203,3 +203,44 @@ alter table public.reports add column if not exists university_id text;
 
 -- Set role = 'admin' for username 'admin'
 update public.profiles set role = 'admin' where username = 'admin';
+
+-- Messages table (order chat)
+create table if not exists public.messages (
+  id uuid default uuid_generate_v4() primary key,
+  order_id uuid references public.orders(id) on delete cascade not null,
+  sender_id uuid references public.profiles(id) on delete cascade not null,
+  content text,
+  image_url text,
+  created_at timestamptz default now()
+);
+
+alter table public.messages enable row level security;
+
+create policy "messages_select" on public.messages for select
+  using (
+    exists (
+      select 1 from public.orders o
+      where o.id = order_id
+        and (o.buyer_id = auth.uid() or
+             exists (select 1 from public.trips t where t.id = o.trip_id and t.shopper_id = auth.uid()))
+    )
+  );
+
+create policy "messages_insert" on public.messages for insert
+  with check (
+    auth.uid() = sender_id and
+    exists (
+      select 1 from public.orders o
+      where o.id = order_id
+        and (o.buyer_id = auth.uid() or
+             exists (select 1 from public.trips t where t.id = o.trip_id and t.shopper_id = auth.uid()))
+    )
+  );
+
+-- Add image_url column if messages table already exists
+alter table public.messages add column if not exists image_url text;
+
+-- Storage bucket for chat images (run in Supabase dashboard or via API)
+-- insert into storage.buckets (id, name, public) values ('chat-images', 'chat-images', true);
+-- create policy "chat_images_select" on storage.objects for select using (bucket_id = 'chat-images');
+-- create policy "chat_images_insert" on storage.objects for insert with check (bucket_id = 'chat-images' and auth.role() = 'authenticated');

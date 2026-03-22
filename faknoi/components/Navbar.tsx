@@ -8,6 +8,7 @@ import { ShoppingBag, LayoutDashboard, MapPin, ClipboardList, Wallet, AlertTrian
 import clsx from "clsx";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
+import { MessageCircle } from "lucide-react";
 
 export default function Navbar({ username }: { username: string }) {
   const router = useRouter();
@@ -16,29 +17,95 @@ export default function Navbar({ username }: { username: string }) {
   const dropRef = useRef<HTMLDivElement>(null);
   const { lang } = useLang();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [totalUnread, setTotalUnread] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState("");
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
+      setCurrentUserId(user.id);
       supabase.from("profiles").select("role, username").eq("id", user.id).single().then(({ data }) => {
         setIsAdmin(data?.role === "admin" || data?.username === "admin");
       });
     });
   }, []);
 
+  // Subscribe to new messages across all user's active orders
+  useEffect(() => {
+    if (!currentUserId) return;
+    const supabase = createClient();
+
+    // Get active order IDs for this user (as buyer or shopper)
+    async function subscribeUnread() {
+      // Fetch orders where user is buyer
+      const { data: buyerOrders } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("buyer_id", currentUserId)
+        .not("status", "in", '("completed","cancelled")');
+
+      // Fetch orders where user is shopper (via trips)
+      const { data: myTrips } = await supabase
+        .from("trips")
+        .select("id")
+        .eq("shopper_id", currentUserId)
+        .not("status", "in", '("completed","cancelled")');
+      const tripIds = (myTrips || []).map((tr: any) => tr.id);
+      let shopperOrders: any[] = [];
+      if (tripIds.length) {
+        const { data } = await supabase
+          .from("orders")
+          .select("id")
+          .in("trip_id", tripIds)
+          .not("status", "in", '("completed","cancelled")');
+        shopperOrders = data || [];
+      }
+
+      const allOrderIds = [
+        ...new Set([
+          ...(buyerOrders || []).map((o: any) => o.id),
+          ...shopperOrders.map((o: any) => o.id),
+        ]),
+      ];
+
+      if (!allOrderIds.length) return;
+
+      const channel = supabase
+        .channel(`navbar-unread-${currentUserId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages" },
+          (payload) => {
+            if (
+              allOrderIds.includes(payload.new.order_id) &&
+              payload.new.sender_id !== currentUserId
+            ) {
+              setTotalUnread((n) => n + 1);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => { supabase.removeChannel(channel); };
+    }
+
+    const cleanup = subscribeUnread();
+    return () => { cleanup.then((fn) => fn && fn()); };
+  }, [currentUserId]);
+
   const navItems = isAdmin ? [
-    { href: "/admin",         label: "หน้าหลัก",  icon: LayoutDashboard, emoji: "🏠" },
-    { href: "/admin/users",   label: "ผู้ใช้งาน", icon: User,             emoji: "👤" },
-    { href: "/admin/areas",   label: "พื้นที่",   icon: MapPin,           emoji: "🏫" },
-    { href: "/admin/wallet",  label: "ถุงเงิน",   icon: Wallet,           emoji: "💰" },
-    { href: "/admin/reports", label: "รายงาน",    icon: AlertTriangle,    emoji: "📋" },
+    { href: "/admin",         label: "หน้าหลัก",  icon: LayoutDashboard, emoji: "🏠",  unread: 0 },
+    { href: "/admin/users",   label: "ผู้ใช้งาน", icon: User,             emoji: "👤",  unread: 0 },
+    { href: "/admin/areas",   label: "พื้นที่",   icon: MapPin,           emoji: "🏫",  unread: 0 },
+    { href: "/admin/wallet",  label: "ถุงเงิน",   icon: Wallet,           emoji: "💰",  unread: 0 },
+    { href: "/admin/reports", label: "รายงาน",    icon: AlertTriangle,    emoji: "📋",  unread: 0 },
   ] : [
-    { href: "/dashboard", label: t(lang, "nav_home"),   icon: LayoutDashboard, emoji: "🏠" },
-    { href: "/trips",     label: t(lang, "nav_trips"),  icon: MapPin,           emoji: "🛵" },
-    { href: "/orders",    label: t(lang, "nav_orders"), icon: ClipboardList,    emoji: "📋" },
-    { href: "/wallet",    label: t(lang, "nav_wallet"), icon: Wallet,           emoji: "💰" },
-    { href: "/report",    label: t(lang, "nav_report"), icon: AlertTriangle,    emoji: "🚨" },
+    { href: "/dashboard", label: t(lang, "nav_home"),   icon: LayoutDashboard, emoji: "🏠",  unread: 0 },
+    { href: "/trips",     label: t(lang, "nav_trips"),  icon: MapPin,           emoji: "🛵",  unread: 0 },
+    { href: "/orders",    label: t(lang, "nav_orders"), icon: ClipboardList,    emoji: "📋",  unread: totalUnread },
+    { href: "/wallet",    label: t(lang, "nav_wallet"), icon: Wallet,           emoji: "💰",  unread: 0 },
+    { href: "/report",    label: t(lang, "nav_report"), icon: AlertTriangle,    emoji: "🚨",  unread: 0 },
   ];
 
   useEffect(() => {
@@ -70,14 +137,20 @@ export default function Navbar({ username }: { username: string }) {
           </Link>
 
           <nav className="flex items-center gap-1">
-            {navItems.slice(0, 5).map(({ href, label, icon: Icon }) => {
+            {navItems.slice(0, 5).map(({ href, label, icon: Icon, unread }) => {
               const active = pathname === href || pathname.startsWith(href + "/");
               return (
-                <Link key={href} href={href} className={clsx(
-                  "flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-bold transition-all duration-200",
+                <Link key={href} href={href} onClick={() => { if (href === "/orders") setTotalUnread(0); }}
+                  className={clsx(
+                  "relative flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-bold transition-all duration-200",
                   active ? "text-white shadow-blue-sm" : "text-gray-500 hover:text-brand-navy hover:bg-brand-blue/5"
                 )} style={active ? {background:"linear-gradient(135deg,#5478FF,#53CBF3)"} : {}}>
                   <Icon className="w-4 h-4" />{label}
+                  {(unread ?? 0) > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black px-1 py-0.5 rounded-full min-w-[16px] text-center leading-none">
+                      {unread}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -142,13 +215,20 @@ export default function Navbar({ username }: { username: string }) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100"
         style={{paddingBottom:"env(safe-area-inset-bottom)", boxShadow:"0 -4px 20px rgba(84,120,255,0.08)"}}>
         <div className="flex px-1 py-1">
-          {navItems.map(({ href, label, emoji }) => {
+          {navItems.map(({ href, label, emoji, unread }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
-              <Link key={href} href={href} className="flex-1 flex flex-col items-center gap-0.5 py-2 rounded-2xl transition-all duration-200">
-                <div className={clsx("w-10 h-7 flex items-center justify-center rounded-2xl transition-all duration-200", active ? "scale-110" : "")}
+              <Link key={href} href={href}
+                onClick={() => { if (href === "/orders") setTotalUnread(0); }}
+                className="flex-1 flex flex-col items-center gap-0.5 py-2 rounded-2xl transition-all duration-200">
+                <div className={clsx("relative w-10 h-7 flex items-center justify-center rounded-2xl transition-all duration-200", active ? "scale-110" : "")}
                   style={active ? {background:"linear-gradient(135deg,#5478FF,#53CBF3)"} : {}}>
                   <span className="text-lg leading-none">{emoji}</span>
+                  {(unread ?? 0) > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black px-1 py-0.5 rounded-full min-w-[16px] text-center leading-none">
+                      {unread}
+                    </span>
+                  )}
                 </div>
                 <span className={clsx("text-[9px] font-black", active ? "text-brand-blue" : "text-gray-400")}>{label}</span>
               </Link>

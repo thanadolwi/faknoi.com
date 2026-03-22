@@ -21,7 +21,7 @@ export async function GET() {
       fee_per_item, payment_info, note, created_at,
       origin_lat, origin_lng, destination_lat, destination_lng,
       profiles(username),
-      orders(id, status, item_description, quantity, total_price, created_at, profiles(username))
+      orders(id, status, items, estimated_price, final_price, created_at, profiles(username))
     `)
     .order("created_at", { ascending: false });
 

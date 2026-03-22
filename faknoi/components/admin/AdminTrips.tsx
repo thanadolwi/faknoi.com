@@ -170,14 +170,16 @@ export default function AdminTrips() {
                       <div className="space-y-1.5">
                         {orders.map((order: any) => {
                           const os = ORDER_STATUS_LABEL[order.status] ?? { label: order.status, color: "bg-gray-100 text-gray-600" };
+                          const itemCount = Array.isArray(order.items) ? order.items.length : 0;
+                          const price = order.final_price ?? order.estimated_price;
                           return (
                             <div key={order.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-brand-navy truncate">
-                                  {order.item_description || "ไม่ระบุรายการ"}
+                                  @{order.profiles?.username}
                                 </p>
                                 <p className="text-[10px] text-gray-400">
-                                  @{order.profiles?.username} · {order.quantity} ชิ้น · ฿{order.total_price}
+                                  {itemCount} รายการ{price ? ` · ฿${price}` : ""}
                                 </p>
                               </div>
                               <span className={`pill text-[10px] ml-2 flex-shrink-0 ${os.color}`}>{os.label}</span>

@@ -81,6 +81,42 @@ export default function WalletPage() {
     load();
   }, []);
 
+  // Realtime: subscribe to payment_slips updates
+  useEffect(() => {
+    if (!userId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`wallet-slips-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "payment_slips" },
+        async () => {
+          // Refresh my slips
+          const { data: slips } = await supabase
+            .from("payment_slips")
+            .select("*")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false });
+          setMySlips(slips || []);
+          // Admin: refresh all slips
+          if (isAdmin) {
+            const res = await fetch("/api/admin/slips");
+            const json = await res.json();
+            setAllSlips(json.slips || []);
+          }
+          // Refresh outstanding balance
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("outstanding_balance")
+            .eq("id", userId)
+            .single();
+          if (profile) setOutstanding(Number(profile.outstanding_balance || 0));
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId, isAdmin]);
+
   const totalActual = orders.reduce((s, o) => s + Number(o.final_price), 0);
   const totalFee = Math.round(totalActual * 0.05 * 100) / 100;
   const hasFee = totalFee > 0 || outstanding > 0;

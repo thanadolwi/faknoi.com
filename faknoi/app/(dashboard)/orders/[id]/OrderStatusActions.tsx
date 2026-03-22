@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { CheckCircle, Truck, ShoppingCart, Upload, XCircle, AlertCircle, ImageIcon, X } from "lucide-react";
 import type { OrderStatus } from "@/lib/types";
@@ -24,7 +23,6 @@ const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
 export default function OrderStatusActions({
   orderId, tripId, currentStatus, isBuyer, isShopper, finalPrice, paymentConfirmed,
 }: Props) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [price, setPrice] = useState(finalPrice?.toString() || "");
   const [reason, setReason] = useState("");
@@ -51,7 +49,7 @@ export default function OrderStatusActions({
       setLoading(false);
       return;
     }
-    router.refresh();
+    // ไม่ต้อง router.refresh() เพราะ realtime subscription ใน I18nOrderDetail จัดการ UI update แล้ว
     setLoading(false);
   }
 
@@ -64,7 +62,6 @@ export default function OrderStatusActions({
     setLoading(true);
     await supabase.from("orders").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", orderId);
     await supabase.rpc("decrement_trip_orders", { trip_id: tripId });
-    router.refresh();
     setLoading(false);
   }
 
@@ -310,7 +307,6 @@ export default function OrderStatusActions({
           await supabase.from("orders").update({ status: "completed", updated_at: new Date().toISOString() }).eq("id", orderId);
           if (finalPrice && user) {
             const fee = Math.round(finalPrice * 0.05 * 100) / 100;
-            // อัปเดต outstanding_balance ใน profiles
             const { data: profile } = await supabase
               .from("profiles")
               .select("outstanding_balance")
@@ -321,7 +317,6 @@ export default function OrderStatusActions({
               .update({ outstanding_balance: current + fee })
               .eq("id", user.id);
           }
-          router.refresh();
           setLoading(false);
         }} disabled={loading}
           className="btn-primary w-full flex items-center justify-center gap-2 text-sm">

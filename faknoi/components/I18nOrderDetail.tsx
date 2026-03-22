@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle, Package, CreditCard, Banknote, Info } from "lucide-react";
 import OrderStatusActions from "@/app/(dashboard)/orders/[id]/OrderStatusActions";
@@ -20,7 +22,7 @@ const statusColorMap: Record<string, { color: string; bg: string; labelKey: stri
 };
 
 export default function I18nOrderDetail({
-  order, userId, username, isBuyer, isShopper,
+  order: initialOrder, userId, username, isBuyer, isShopper,
 }: {
   order: any;
   userId: string;
@@ -29,6 +31,23 @@ export default function I18nOrderDetail({
   isShopper: boolean;
 }) {
   const { lang } = useLang();
+  const [order, setOrder] = useState(initialOrder);
+
+  // Realtime: subscribe to order updates
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`order-detail-${initialOrder.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${initialOrder.id}` },
+        (payload) => {
+          setOrder((prev: any) => ({ ...prev, ...payload.new }));
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [initialOrder.id]);
   const s = statusColorMap[order.status] || { labelKey: order.status, color: "text-gray-600", bg: "bg-gray-50 border-gray-200" };
   const currentStepIndex = statusSteps.indexOf(order.status);
   const showPaymentInfo = ["bought", "delivering", "completed"].includes(order.status);

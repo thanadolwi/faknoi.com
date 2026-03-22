@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageCircle, ArrowRight, ChevronDown, ShoppingBag, User } from "lucide-react";
 import Link from "next/link";
 import OrderChat from "./OrderChat";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
+import { createClient } from "@/lib/supabase/client";
 
 interface ActiveOrder {
   id: string;
@@ -18,7 +19,7 @@ interface ActiveOrder {
     shopper_id: string;
     profiles: { username: string } | null;
   } | null;
-  profiles: { username: string } | null; // buyer profile
+  profiles: { username: string } | null;
 }
 
 interface Props {
@@ -37,12 +38,51 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
   const [openId, setOpenId] = useState<string | null>(
     orders.length === 1 ? orders[0].id : null
   );
+  // unreadMap: orderId -> count
+  const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
   const { lang } = useLang();
+
+  // Subscribe to new messages for all orders to track unread counts
+  useEffect(() => {
+    if (orders.length === 0) return;
+    const supabase = createClient();
+    const channels = orders.map((order) => {
+      return supabase
+        .channel(`dash-chat-unread-${order.id}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages", filter: `order_id=eq.${order.id}` },
+          (payload) => {
+            // Only count messages from others
+            if (payload.new.sender_id !== currentUserId) {
+              setUnreadMap((prev) => ({
+                ...prev,
+                [order.id]: (prev[order.id] || 0) + 1,
+              }));
+            }
+          }
+        )
+        .subscribe();
+    });
+    return () => { channels.forEach((ch) => supabase.removeChannel(ch)); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders.length, currentUserId]);
+
+  const totalUnread = Object.values(unreadMap).reduce((s, n) => s + n, 0);
 
   if (orders.length === 0) return null;
 
   const shopperOrders = orders.filter((o) => o.trips?.shopper_id === currentUserId);
   const buyerOrders = orders.filter((o) => o.trips?.shopper_id !== currentUserId);
+
+  function handleOpen(orderId: string) {
+    const isOpen = openId === orderId;
+    setOpenId(isOpen ? null : orderId);
+    if (!isOpen) {
+      // Clear unread for this order when opening
+      setUnreadMap((prev) => ({ ...prev, [orderId]: 0 }));
+    }
+  }
 
   function renderGroup(groupOrders: ActiveOrder[], groupLabel: string, icon: React.ReactNode) {
     if (groupOrders.length === 0) return null;
@@ -54,6 +94,7 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
         {groupOrders.map((order) => {
           const isShopper = order.trips?.shopper_id === currentUserId;
           const isOpen = openId === order.id;
+          const orderUnread = unreadMap[order.id] || 0;
           const contextLabel = isShopper
             ? `${t(lang, "chat_buyer")}: ${order.profiles?.username || "-"}`
             : `${t(lang, "chat_shopper_label")}: ${order.trips?.profiles?.username || "-"}`;
@@ -61,7 +102,7 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
           return (
             <div key={order.id} className="card p-0 overflow-hidden">
               <button
-                onClick={() => setOpenId(isOpen ? null : order.id)}
+                onClick={() => handleOpen(order.id)}
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-start gap-3 text-left">
@@ -77,6 +118,11 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
                       <span className="text-sm font-semibold text-brand-navy">{order.trips?.origin_zone}</span>
                       <ArrowRight className="w-3 h-3 text-gray-400" />
                       <span className="text-sm font-semibold text-brand-navy">{order.trips?.destination_zone}</span>
+                      {orderUnread > 0 && (
+                        <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                          {orderUnread}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-xs text-gray-400">{contextLabel}</span>
@@ -112,6 +158,11 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
       <h2 className="font-bold text-brand-navy flex items-center gap-2">
         <MessageCircle className="w-4 h-4 text-brand-blue" />
         {t(lang, "chat_active")}
+        {totalUnread > 0 && (
+          <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+            {totalUnread}
+          </span>
+        )}
       </h2>
       {renderGroup(shopperOrders, t(lang, "chat_as_shopper"), <User className="w-3.5 h-3.5 text-brand-blue" />)}
       {renderGroup(buyerOrders, t(lang, "chat_as_buyer"), <ShoppingBag className="w-3.5 h-3.5 text-brand-cyan" />)}

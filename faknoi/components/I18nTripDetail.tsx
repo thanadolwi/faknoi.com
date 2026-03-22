@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Clock, Users, ArrowRight, Plus, ShieldCheck } from "lucide-react";
 import TripStatusActions from "@/app/(dashboard)/trips/[id]/TripStatusActions";
@@ -63,7 +64,7 @@ function AdminStatusSelect({ type, id, current, onDone }: { type: "trip" | "orde
 }
 
 export default function I18nTripDetail({
-  trip, orders, isShopper, userId, isAdmin = false,
+  trip: initialTrip, orders: initialOrders, isShopper, userId, isAdmin = false,
 }: {
   trip: any;
   orders: any[];
@@ -73,6 +74,46 @@ export default function I18nTripDetail({
 }) {
   const { lang } = useLang();
   const router = useRouter();
+  const [trip, setTrip] = useState(initialTrip);
+  const [orders, setOrders] = useState(initialOrders);
+
+  // Realtime: subscribe to trip + orders updates
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`trip-detail-${initialTrip.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "trips", filter: `id=eq.${initialTrip.id}` },
+        (payload) => {
+          setTrip((prev: any) => ({ ...prev, ...payload.new }));
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders", filter: `trip_id=eq.${initialTrip.id}` },
+        (payload) => {
+          setOrders((prev: any[]) =>
+            prev.map((o) => (o.id === payload.new.id ? { ...o, ...payload.new } : o))
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders", filter: `trip_id=eq.${initialTrip.id}` },
+        async (payload) => {
+          const { data } = await supabase
+            .from("orders")
+            .select("*, profiles(username)")
+            .eq("id", payload.new.id)
+            .single();
+          if (data) setOrders((prev: any[]) => [...prev, data]);
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [initialTrip.id]);
+
   const sc = statusColorMap[trip.status] || { colorClass: "bg-gray-100 text-gray-600", labelKey: trip.status };
 
   return (

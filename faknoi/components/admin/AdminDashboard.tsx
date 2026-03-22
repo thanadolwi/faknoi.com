@@ -36,7 +36,7 @@ export default function AdminDashboard({ userCount, openTrips, slipsPending, sli
   const stats = [
     { label: "จำนวนบัญชีผู้ใช้งาน", value: userCount, icon: <Users className="w-5 h-5 text-brand-blue" />, color: "bg-brand-blue/10" },
     { label: "พื้นที่ที่เปิดใช้งาน", value: activeAreas.length, icon: <MapPin className="w-5 h-5 text-green-500" />, color: "bg-green-50" },
-    { label: "ทริปที่เปิดอยู่", value: filteredTrips.length, icon: <TrendingUp className="w-5 h-5 text-brand-cyan" />, color: "bg-brand-cyan/10" },
+    { label: "ทริปที่เปิดอยู่", value: openTrips.length, icon: <TrendingUp className="w-5 h-5 text-brand-cyan" />, color: "bg-brand-cyan/10" },
     { label: "สลิปค้างตรวจ", value: filteredPending.length, icon: <Wallet className="w-5 h-5 text-amber-500" />, color: "bg-amber-50", urgent: filteredPending.length > 0 },
     { label: "ตรวจสอบเรียบร้อย", value: filteredVerified.length, icon: <Wallet className="w-5 h-5 text-blue-500" />, color: "bg-blue-50" },
     { label: "อัปเดตข้อมูลเสร็จสิ้น", value: filteredUpdated.length, icon: <Wallet className="w-5 h-5 text-green-500" />, color: "bg-green-50" },
