@@ -4,13 +4,20 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Eye, EyeOff, UserPlus, Accessibility, Volume2, Brain, MoreHorizontal, Mic, Layers, Palette, Check } from "lucide-react";
-import { useLang } from "@/lib/LangContext";
+import { Eye, EyeOff, UserPlus, Accessibility, Volume2, Brain, MoreHorizontal, Mic, Layers, Palette, Check, Globe } from "lucide-react";
+import { useLang, type Lang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
+
+const LANG_OPTIONS: { value: Lang; label: string; flag: string }[] = [
+  { value: "th", label: "ภาษาไทย", flag: "🇹🇭" },
+  { value: "en", label: "English",  flag: "🇬🇧" },
+  { value: "zh", label: "中文",      flag: "🇨🇳" },
+  { value: "hi", label: "हिन्दी",    flag: "🇮🇳" },
+];
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { lang } = useLang();
+  const { lang, setLang } = useLang();
   const [form, setForm] = useState({ email: "", username: "", nationalId: "", password: "", confirmPassword: "" });
   const [showPass, setShowPass] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -154,6 +161,26 @@ export default function RegisterPage() {
             {" "}ของ FakNoi
           </span>
         </label>
+
+        {/* Language (optional) */}
+        <div className="border border-gray-100 rounded-2xl p-4 space-y-3 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <Globe className="w-4 h-4 text-brand-blue" />
+            <p className="font-black text-brand-navy text-sm">ภาษาในการแสดงผล <span className="text-gray-400 font-normal text-xs">(ตัวเลือกเสริม)</span></p>
+          </div>
+          <p className="text-xs text-gray-400">เลือกได้เลยถ้าต้องการปรับการแสดงผลตามความต้องการ สามารถเปลี่ยนได้ภายหลังที่ "ตั้งค่าบัญชี"</p>
+          <div className="grid grid-cols-2 gap-2">
+            {LANG_OPTIONS.map(({ value, label, flag }) => (
+              <button key={value} type="button" onClick={() => setLang(value)}
+                className={`flex items-center justify-center gap-2 py-2.5 rounded-xl font-black text-xs transition-all border-2 ${
+                  lang === value ? "text-white border-brand-blue" : "border-gray-200 bg-white text-gray-600 hover:border-brand-blue/30"
+                }`}
+                style={lang === value ? { background: "linear-gradient(135deg,#5478FF,#53CBF3)" } : {}}>
+                <span className="text-base">{flag}</span> {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Universal Design (optional) */}
         <div className="border border-gray-100 rounded-2xl p-4 space-y-3 bg-gray-50">
