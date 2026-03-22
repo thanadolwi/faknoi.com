@@ -20,16 +20,25 @@ const statusColorMap: Record<string, { colorClass: string; labelKey: string }> =
 };
 
 const TRIP_STATUSES = ["open", "shopping", "delivering", "completed", "cancelled"];
-const ORDER_STATUSES = ["pending", "confirmed", "shopping", "delivered", "cancelled"];
+const ORDER_STATUSES = ["pending", "accepted", "shopping", "bought", "delivering", "completed", "cancelled"];
 
 const ORDER_STATUS_LABEL: Record<string, string> = {
-  pending: "รอยืนยัน", confirmed: "ยืนยันแล้ว", shopping: "กำลังซื้อ",
-  delivered: "ส่งแล้ว", cancelled: "ยกเลิก",
+  pending:    "รอยืนยัน",
+  accepted:   "ยืนยันแล้ว",
+  shopping:   "กำลังซื้อ",
+  bought:     "ซื้อแล้ว",
+  delivering: "กำลังส่ง",
+  completed:  "เสร็จสิ้น",
+  cancelled:  "ยกเลิก",
 };
 const ORDER_STATUS_COLOR: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700", confirmed: "bg-blue-100 text-blue-700",
-  shopping: "bg-purple-100 text-purple-700", delivered: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-600",
+  pending:    "bg-yellow-100 text-yellow-700",
+  accepted:   "bg-blue-100 text-blue-700",
+  shopping:   "bg-purple-100 text-purple-700",
+  bought:     "bg-cyan-100 text-cyan-700",
+  delivering: "bg-orange-100 text-orange-700",
+  completed:  "bg-green-100 text-green-700",
+  cancelled:  "bg-red-100 text-red-600",
 };
 
 function AdminStatusSelect({ type, id, current, onDone }: { type: "trip" | "order"; id: string; current: string; onDone: () => void }) {
