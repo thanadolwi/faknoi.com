@@ -27,3 +27,30 @@ export async function GET() {
 
   return NextResponse.json({ trips: trips || [] });
 }
+
+export async function PATCH(request: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { data: profile } = await supabase.from("profiles").select("role, username").eq("id", user.id).single();
+  if (profile?.role !== "admin" && profile?.username !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const admin = createAdminClient();
+  const { type, id, status } = await request.json();
+
+  if (type === "trip") {
+    const { error } = await admin.from("trips").update({
+      status,
+      ...(status === "completed" ? { closed_at: new Date().toISOString() } : {}),
+    }).eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  } else if (type === "order") {
+    const { error } = await admin.from("orders").update({ status }).eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

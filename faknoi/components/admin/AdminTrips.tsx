@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { MapPin, ArrowRight, Users, Clock, ChevronDown, ChevronUp, Package, GraduationCap } from "lucide-react";
+import Link from "next/link";
 import { UNIVERSITIES } from "@/lib/universities";
 
 const TRIP_STATUS_LABEL: Record<string, { label: string; color: string }> = {
@@ -100,6 +101,11 @@ export default function AdminTrips() {
                       </span>
                     )}
                     <span className="text-xs text-gray-400">@{trip.profiles?.username}</span>
+                    <Link href={`/trips/${trip.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="ml-auto text-xs text-brand-blue font-bold hover:underline flex items-center gap-0.5">
+                      ดูรายละเอียด <ArrowRight className="w-3 h-3" />
+                    </Link>
                   </div>
                   <div className="flex items-center gap-1.5 text-sm font-bold text-brand-navy">
                     <MapPin className="w-3.5 h-3.5 text-brand-blue flex-shrink-0" />

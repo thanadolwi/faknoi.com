@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, ArrowLeft, Loader2, Trash2, XCircle, AlertCircle, ChevronDown } from "lucide-react";
+import { Search, ArrowLeft, ArrowRight, Loader2, Trash2, XCircle, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 interface UserProfile {
@@ -152,20 +152,26 @@ export default function AdminUsers() {
                       <p className="text-sm font-bold text-brand-navy">{trip.origin_zone} → {trip.destination_zone}</p>
                       <p className="text-xs text-gray-400">{statusLabel[trip.status] || trip.status} · {new Date(trip.created_at).toLocaleDateString("th-TH")}</p>
                     </div>
-                    {trip.status !== "cancelled" && trip.status !== "completed" && (
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => setActionModal({ type: "cancel_trip", id: trip.id, label: `ยกเลิกทริป ${trip.origin_zone}→${trip.destination_zone}` })}
-                          className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors" title="ยกเลิกทริป">
-                          <XCircle className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setActionModal({ type: "delete_trip", id: trip.id, label: `ลบทริป ${trip.origin_zone}→${trip.destination_zone}` })}
-                          className="p-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors" title="ลบทริป">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex gap-1">
+                      <Link href={`/trips/${trip.id}`}
+                        className="p-1.5 rounded-lg bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/20 transition-colors" title="ดูรายละเอียด">
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                      {trip.status !== "cancelled" && trip.status !== "completed" && (
+                        <>
+                          <button
+                            onClick={() => setActionModal({ type: "cancel_trip", id: trip.id, label: `ยกเลิกทริป ${trip.origin_zone}→${trip.destination_zone}` })}
+                            className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors" title="ยกเลิกทริป">
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setActionModal({ type: "delete_trip", id: trip.id, label: `ลบทริป ${trip.origin_zone}→${trip.destination_zone}` })}
+                            className="p-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors" title="ลบทริป">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

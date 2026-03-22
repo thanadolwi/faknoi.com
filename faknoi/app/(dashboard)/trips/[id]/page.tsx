@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import I18nTripDetail from "@/components/I18nTripDetail";
 
-export const revalidate = 10;
+export const dynamic = "force-dynamic";
 
 export default async function TripDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,7 +23,14 @@ export default async function TripDetailPage({ params }: { params: Promise<{ id:
     .eq("trip_id", id)
     .order("created_at", { ascending: true });
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, username")
+    .eq("id", user?.id ?? "")
+    .single();
+
   const isShopper = trip.shopper_id === user?.id;
+  const isAdmin = profile?.role === "admin" || profile?.username === "admin";
 
   return (
     <I18nTripDetail
@@ -31,6 +38,7 @@ export default async function TripDetailPage({ params }: { params: Promise<{ id:
       orders={orders || []}
       isShopper={isShopper}
       userId={user!.id}
+      isAdmin={isAdmin}
     />
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Users, MapPin, Wallet, FileText, TrendingUp, ChevronDown, ArrowRight } from "lucide-react";
+import { Users, MapPin, Wallet, TrendingUp, ChevronDown, ArrowRight } from "lucide-react";
 import { UNIVERSITIES } from "@/lib/universities";
 
 interface Props {
@@ -100,14 +100,22 @@ export default function AdminDashboard({ userCount, openTrips, slipsPending, sli
           <h2 className="font-black text-brand-navy mb-3 text-sm">🛵 ทริปที่เปิดอยู่ ({filteredTrips.length})</h2>
           <div className="space-y-2">
             {filteredTrips.slice(0, 5).map((trip: any) => (
-              <div key={trip.id} className="card flex items-center justify-between py-3">
+              <Link key={trip.id} href={`/trips/${trip.id}`} className="card flex items-center justify-between py-3 hover:border-brand-blue/30 transition-all group">
                 <div>
                   <p className="text-sm font-bold text-brand-navy">{trip.origin_zone} → {trip.destination_zone}</p>
                   <p className="text-xs text-gray-400">@{trip.profiles?.username} · {trip.current_orders}/{trip.max_orders} ออเดอร์</p>
                 </div>
-                <span className="pill bg-green-100 text-green-700 text-xs">เปิด</span>
-              </div>
+                <div className="flex items-center gap-2">
+                  <span className="pill bg-green-100 text-green-700 text-xs">เปิด</span>
+                  <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-brand-blue transition-colors" />
+                </div>
+              </Link>
             ))}
+            {filteredTrips.length > 5 && (
+              <Link href="/admin/trips" className="block text-center text-xs text-brand-blue font-bold py-2 hover:underline">
+                ดูทั้งหมด {filteredTrips.length} ทริป →
+              </Link>
+            )}
           </div>
         </div>
       )}
