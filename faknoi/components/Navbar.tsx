@@ -20,6 +20,13 @@ export default function Navbar({ username }: { username: string }) {
   const [totalUnread, setTotalUnread] = useState(0);
   const [currentUserId, setCurrentUserId] = useState("");
 
+  // Reset unread เมื่ออยู่ในหน้า orders หรือ order detail
+  useEffect(() => {
+    if (pathname.startsWith("/orders")) {
+      setTotalUnread(0);
+    }
+  }, [pathname]);
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -81,7 +88,13 @@ export default function Navbar({ username }: { username: string }) {
               allOrderIds.includes(payload.new.order_id) &&
               payload.new.sender_id !== currentUserId
             ) {
-              setTotalUnread((n) => n + 1);
+              // ตรวจสอบว่า order นี้ถูกอ่านแล้วหรือยัง
+              const readKey = `chat-read-${payload.new.order_id}`;
+              const lastRead = localStorage.getItem(readKey);
+              const msgTime = new Date(payload.new.created_at).getTime();
+              if (!lastRead || msgTime > parseInt(lastRead)) {
+                setTotalUnread((n) => n + 1);
+              }
             }
           }
         )

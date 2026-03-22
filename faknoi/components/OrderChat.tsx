@@ -50,6 +50,8 @@ export default function OrderChat({ orderId, currentUserId, embedded = false }: 
         .order("created_at", { ascending: true });
       setMessages(data || []);
       setUnread(0);
+      // mark as read
+      localStorage.setItem(`chat-read-${orderId}`, Date.now().toString());
     }
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,6 +88,8 @@ export default function OrderChat({ orderId, currentUserId, embedded = false }: 
     if (open) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
       setUnread(0);
+      // บันทึกเวลาอ่านล่าสุดลง localStorage
+      localStorage.setItem(`chat-read-${orderId}`, Date.now().toString());
     }
   }, [messages, open]);
 
