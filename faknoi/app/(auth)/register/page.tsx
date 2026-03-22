@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Eye, EyeOff, UserPlus } from "lucide-react";
+import { Eye, EyeOff, UserPlus, Accessibility, Volume2, Brain, MoreHorizontal, Mic, Layers, Palette, Check } from "lucide-react";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
 
@@ -18,8 +18,27 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // UD states
+  const [udVisual, setUdVisual] = useState(false);
+  const [udHearing, setUdHearing] = useState(false);
+  const [udAutism, setUdAutism] = useState(false);
+  const [udOther, setUdOther] = useState(false);
+  const [udOtherTTS, setUdOtherTTS] = useState(false);
+  const [udOtherReduceUI, setUdOtherReduceUI] = useState(false);
+  const [udOtherColorBlind, setUdOtherColorBlind] = useState(false);
+
   function update(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function saveUDToLocalStorage() {
+    localStorage.setItem("ud_visual", udVisual ? "1" : "0");
+    localStorage.setItem("ud_hearing", udHearing ? "1" : "0");
+    localStorage.setItem("ud_autism", udAutism ? "1" : "0");
+    localStorage.setItem("ud_other", udOther ? "1" : "0");
+    localStorage.setItem("ud_other_tts", udOtherTTS ? "1" : "0");
+    localStorage.setItem("ud_other_reduce_ui", udOtherReduceUI ? "1" : "0");
+    localStorage.setItem("ud_other_colorblind", udOtherColorBlind ? "1" : "0");
   }
 
   async function handleRegister(e: React.FormEvent) {
@@ -40,6 +59,7 @@ export default function RegisterPage() {
       setError(signUpError.message.includes("already registered") ? t(lang, "reg_err_email_used") : signUpError.message);
       setLoading(false); return;
     }
+    saveUDToLocalStorage();
     setSuccess(true);
     setLoading(false);
     setTimeout(() => router.push("/dashboard"), 1500);
@@ -134,6 +154,64 @@ export default function RegisterPage() {
             {" "}ของ FakNoi
           </span>
         </label>
+
+        {/* Universal Design (optional) */}
+        <div className="border border-gray-100 rounded-2xl p-4 space-y-3 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <Accessibility className="w-4 h-4 text-brand-blue" />
+            <p className="font-black text-brand-navy text-sm">Universal Design <span className="text-gray-400 font-normal text-xs">(ตัวเลือกเสริม)</span></p>
+          </div>
+          <p className="text-xs text-gray-400">เลือกได้เลยถ้าต้องการปรับการแสดงผลตามความต้องการ สามารถเปลี่ยนได้ภายหลังที่ "ตั้งค่าบัญชี"</p>
+          <div className="space-y-2">
+            {[
+              { val: udVisual,  set: setUdVisual,  icon: Eye,           label: "ผู้พิการทางสายตา",     desc: "จอสีดำ contrast สูง + อ่านออกเสียง" },
+              { val: udHearing, set: setUdHearing, icon: Volume2,        label: "ผู้พิการทางการได้ยิน", desc: "แสดงคำบรรยายและการแจ้งเตือนด้วยภาพ" },
+              { val: udAutism,  set: setUdAutism,  icon: Brain,          label: "ออทิสติก",             desc: "ลด animation, UI เรียบง่ายขึ้น" },
+              { val: udOther,   set: setUdOther,   icon: MoreHorizontal, label: "อื่นๆ",                desc: "ปรับแต่งเพิ่มเติม" },
+            ].map(({ val, set, icon: Icon, label, desc }) => (
+              <button key={label} type="button" onClick={() => set(!val)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 transition-all text-left ${
+                  val ? "border-brand-blue bg-brand-blue/5" : "border-gray-200 bg-white hover:border-brand-blue/30"
+                }`}>
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${val ? "text-white" : "bg-gray-100 text-gray-400"}`}
+                  style={val ? { background: "linear-gradient(135deg,#5478FF,#53CBF3)" } : {}}>
+                  <Icon className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex-1">
+                  <p className={`text-xs font-black ${val ? "text-brand-navy" : "text-gray-700"}`}>{label}</p>
+                  <p className="text-[10px] text-gray-400">{desc}</p>
+                </div>
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${val ? "border-brand-blue bg-brand-blue" : "border-gray-300"}`}>
+                  {val && <Check className="w-2.5 h-2.5 text-white" />}
+                </div>
+              </button>
+            ))}
+          </div>
+          {/* Sub-options for อื่นๆ */}
+          {udOther && (
+            <div className="ml-4 space-y-1.5 border-l-2 border-brand-blue/20 pl-3">
+              {[
+                { val: udOtherTTS,        set: setUdOtherTTS,        icon: Mic,     label: "อ่านข้อความออกเสียง" },
+                { val: udOtherReduceUI,   set: setUdOtherReduceUI,   icon: Layers,  label: "ลด UI" },
+                { val: udOtherColorBlind, set: setUdOtherColorBlind, icon: Palette, label: "สำหรับตาบอดสี" },
+              ].map(({ val, set, icon: Icon, label }) => (
+                <button key={label} type="button" onClick={() => set(!val)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-left ${
+                    val ? "border-brand-blue/40 bg-brand-blue/5" : "border-gray-100 bg-white hover:border-brand-blue/20"
+                  }`}>
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${val ? "text-white" : "bg-gray-100 text-gray-400"}`}
+                    style={val ? { background: "linear-gradient(135deg,#5478FF,#53CBF3)" } : {}}>
+                    <Icon className="w-3 h-3" />
+                  </div>
+                  <p className={`text-xs font-bold flex-1 ${val ? "text-brand-navy" : "text-gray-600"}`}>{label}</p>
+                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${val ? "border-brand-blue bg-brand-blue" : "border-gray-300"}`}>
+                    {val && <Check className="w-2 h-2 text-white" />}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <button type="submit" disabled={loading || !acceptTerms} className="btn-primary w-full flex items-center justify-center gap-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
           {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <UserPlus className="w-4 h-4" />}
