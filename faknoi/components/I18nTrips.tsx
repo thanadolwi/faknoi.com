@@ -35,9 +35,15 @@ export default function I18nTrips({ trips: initialTrips }: Props) {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "trips" },
         (payload) => {
-          setTrips((prev) =>
-            prev.map((t) => (t.id === payload.new.id ? { ...t, ...payload.new } : t))
-          );
+          const updated = payload.new;
+          // ถ้า completed หรือ cancelled ให้เอาออกจาก list
+          if (updated.status === "completed" || updated.status === "cancelled") {
+            setTrips((prev) => prev.filter((t) => t.id !== updated.id));
+          } else {
+            setTrips((prev) =>
+              prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t))
+            );
+          }
         }
       )
       .on(
