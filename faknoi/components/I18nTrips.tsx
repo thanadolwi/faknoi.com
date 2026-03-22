@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, MapPin, ArrowRight, Users, GraduationCap, Clock } from "lucide-react";
+import { Plus, MapPin, ArrowRight, Users, GraduationCap, Clock, Navigation } from "lucide-react";
 import CountdownTimer from "./CountdownTimer";
 import UniversityFilter from "./UniversityFilter";
-import NearbyTrips from "./NearbyTrips";
+import NearbyTrips, { getTripDistanceLabel } from "./NearbyTrips";
 import { UNIVERSITIES } from "@/lib/universities";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
@@ -18,6 +18,7 @@ interface Props {
 export default function I18nTrips({ trips, zone }: Props) {
   const { lang } = useLang();
   const [sortedTrips, setSortedTrips] = useState<any[]>(trips);
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
 
   return (
     <div className="space-y-5">
@@ -35,7 +36,7 @@ export default function I18nTrips({ trips, zone }: Props) {
       <UniversityFilter />
 
       {/* Current location + sort by distance */}
-      <NearbyTrips trips={trips} onSorted={setSortedTrips} />
+      <NearbyTrips trips={trips} onSorted={setSortedTrips} onLocated={setUserLoc} />
 
       {sortedTrips.length > 0 ? (
         <div className="space-y-3">
@@ -54,6 +55,15 @@ export default function I18nTrips({ trips, zone }: Props) {
                       {UNIVERSITIES.find((u) => u.id === trip.university_id)?.shortName}
                     </span>
                   )}
+                  {(() => {
+                    const dist = getTripDistanceLabel(trip, userLoc, "km");
+                    return dist ? (
+                      <span className="text-xs text-brand-blue font-semibold flex items-center gap-1 ml-auto">
+                        <Navigation className="w-3 h-3" />
+                        {dist}
+                      </span>
+                    ) : null;
+                  })()}
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="w-4 h-4 text-brand-blue flex-shrink-0" />

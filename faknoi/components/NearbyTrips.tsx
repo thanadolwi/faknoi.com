@@ -7,9 +7,12 @@ import { t } from "@/lib/i18n";
 
 interface LatLng { lat: number; lng: number }
 
+interface LatLngPublic { lat: number; lng: number }
+
 interface Props {
   trips: any[];
   onSorted: (sorted: any[]) => void;
+  onLocated?: (loc: LatLngPublic) => void;
 }
 
 function haversineKm(a: LatLng, b: LatLng): number {
@@ -24,7 +27,7 @@ function haversineKm(a: LatLng, b: LatLng): number {
   return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
-export default function NearbyTrips({ trips, onSorted }: Props) {
+export default function NearbyTrips({ trips, onSorted, onLocated }: Props) {
   const { lang } = useLang();
   const [userLoc, setUserLoc] = useState<LatLng | null>(null);
   const [locating, setLocating] = useState(false);
@@ -38,6 +41,7 @@ export default function NearbyTrips({ trips, onSorted }: Props) {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserLoc(loc);
         setLocating(false);
+        onLocated?.(loc);
         // Reverse geocode using Nominatim (free, no key needed)
         try {
           const res = await fetch(
