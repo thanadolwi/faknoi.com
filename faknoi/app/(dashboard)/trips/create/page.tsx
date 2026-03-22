@@ -126,7 +126,7 @@ export default function CreateTripPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
     const { error: err } = await supabase.from("trips").insert({
-      shopper_id: user.id, university_id: selectedUniId,
+      shopper_id: user.id, university_id: selectedUniId || null,
       origin_zone: form.origin_zone, destination_zone: form.destination_zone,
       cutoff_time: new Date(form.cutoff_time).toISOString(),
       max_orders: form.max_orders, fee_per_item: form.fee_per_item,

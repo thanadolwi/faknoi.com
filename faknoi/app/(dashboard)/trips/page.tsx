@@ -23,8 +23,12 @@ export default async function TripsPage({
 
   const { data: allTrips } = await query;
 
-  // กรองทริปที่เต็มแล้วออก (current_orders >= max_orders)
-  const trips = (allTrips || []).filter((trip) => trip.current_orders < trip.max_orders);
+  // กรองทริปที่เต็มแล้วออก และถ้า filter uni ให้กรอง empty string ออกด้วย
+  const trips = (allTrips || []).filter((trip) => {
+    if (trip.current_orders >= trip.max_orders) return false;
+    if (uni && (!trip.university_id || trip.university_id !== uni)) return false;
+    return true;
+  });
 
   return <I18nTrips trips={trips} zone={zone} />;
 }
