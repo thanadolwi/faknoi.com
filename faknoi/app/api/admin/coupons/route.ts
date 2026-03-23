@@ -61,8 +61,8 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json();
   const { id, ...updates } = body;
-  const admin = createAdminClient();
-  const { error } = await admin.from("coupons").update(updates).eq("id", id);
+  // ใช้ regular client เพื่อให้ realtime ยิง event
+  const { error } = await supabase.from("coupons").update(updates).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
@@ -75,8 +75,8 @@ export async function DELETE(req: NextRequest) {
   if (profile?.role !== "admin" && profile?.username !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await req.json();
-  const admin = createAdminClient();
-  const { error } = await admin.from("coupons").delete().eq("id", id);
+  // ใช้ regular client เพื่อให้ realtime ยิง event
+  const { error } = await supabase.from("coupons").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
