@@ -6,6 +6,7 @@ import { Users, MapPin, Wallet, TrendingUp, ChevronDown, ArrowRight, Clock, Shop
 import { UNIVERSITIES, getUniShortNameById, getZoneNameByThai } from "@/lib/universities";
 import { createClient } from "@/lib/supabase/client";
 import AdminBanners from "./AdminBanners";
+import AdminCoupons from "./AdminCoupons";
 
 interface ZoneByUni { uniId: string; uniName: string; zones: [string, number][]; }
 interface ItemByUni { uniId: string; uniName: string; items: [string, number][]; }
@@ -384,6 +385,9 @@ export default function AdminDashboard({ userCount: initialUserCount, openTrips:
 
       {/* Banner Management */}
       <AdminBanners />
+
+      {/* Coupon Management */}
+      <AdminCoupons />
 
     </div>
   );

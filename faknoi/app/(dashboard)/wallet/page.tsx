@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { TrendingUp, AlertCircle, Upload, ImageIcon, X, CheckCircle, Clock, BadgeCheck, RefreshCw, Wallet } from "lucide-react";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
+import UserCoins from "@/components/UserCoins";
 
 const MAX_SIZE = 500 * 1024;
 
@@ -212,6 +213,9 @@ export default function WalletPage() {
         <h1 className="text-xl font-black text-brand-navy">{t(lang, "w_title")}</h1>
         <p className="text-sm text-gray-400 mt-0.5">{t(lang, "w_subtitle")}</p>
       </div>
+
+      {/* Coins & Coupons — only for non-admin */}
+      {!isAdmin && userId && <UserCoins userId={userId} initialCoins={0} />}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">

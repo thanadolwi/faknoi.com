@@ -39,22 +39,23 @@ export default function BannerSlider({ initialBanners }: Props) {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  useEffect(() => {
-    if (banners.length <= 1) return;
+  const startTimer = (len: number) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (len < 2) return;
     timerRef.current = setInterval(() => {
-      setCurrent((c) => (c + 1) % banners.length);
+      setCurrent((c) => (c + 1) % len);
     }, 4000);
+  };
+
+  useEffect(() => {
+    startTimer(banners.length);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [banners.length]);
 
   function goTo(idx: number) {
     setCurrent((idx + banners.length) % banners.length);
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (banners.length > 1) {
-      timerRef.current = setInterval(() => {
-        setCurrent((c) => (c + 1) % banners.length);
-      }, 4000);
-    }
+    startTimer(banners.length);
   }
 
   if (banners.length === 0) return null;
