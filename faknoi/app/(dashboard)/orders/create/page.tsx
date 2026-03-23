@@ -146,6 +146,16 @@ function CreateOrderForm() {
 
         {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">{error}</div>}
 
+        {/* Disclaimer */}
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-start gap-3">
+          <span className="text-lg flex-shrink-0">⚠️</span>
+          <div className="text-xs text-amber-800 space-y-1">
+            <p className="font-black">ข้อควรระวัง</p>
+            <p>FakNoi เป็นเพียงตัวกลางในการเชื่อมต่อระหว่างผู้ฝากหิ้วและผู้รับหิ้วเท่านั้น ไม่มีส่วนเกี่ยวข้องกับสินค้าหรือบริการที่สั่ง</p>
+            <p>การสั่งสินค้า <span className="font-black">ผิดกฎหมาย สินค้าต้องห้าม หรือสิ่งผิดกฎหมายทุกประเภท</span> ถือเป็นความรับผิดชอบของผู้ใช้งานโดยตรง FakNoi ขอสงวนสิทธิ์ระงับบัญชีและดำเนินการตามกฎหมายกับผู้ที่กระทำผิด</p>
+          </div>
+        </div>
+
         <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
           {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ShoppingBag className="w-4 h-4" />}
           {loading ? t(lang, "co_submitting") : t(lang, "co_confirm")}
