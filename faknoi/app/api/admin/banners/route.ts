@@ -22,11 +22,23 @@ export async function POST(req: Request) {
   const user = await checkAdmin();
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { imageUrl } = await req.json();
-  if (!imageUrl) return NextResponse.json({ error: "Missing imageUrl" }, { status: 400 });
+  const formData = await req.formData();
+  const file = formData.get("file") as File | null;
+  if (!file) return NextResponse.json({ error: "Missing file" }, { status: 400 });
 
   const admin = createAdminClient();
-  const { data, error } = await admin.from("banners").insert({ image_url: imageUrl, created_by: user.id }).select().single();
+  const ext = file.name.split(".").pop();
+  const path = `banners/${Date.now()}.${ext}`;
+  const arrayBuffer = await file.arrayBuffer();
+  const { error: upErr } = await admin.storage.from("banners").upload(path, arrayBuffer, {
+    contentType: file.type,
+    upsert: false,
+  });
+  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+
+  const { data: { publicUrl } } = admin.storage.from("banners").getPublicUrl(path);
+
+  const { data, error } = await admin.from("banners").insert({ image_url: publicUrl, created_by: user.id }).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ banner: data });
 }

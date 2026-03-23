@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { ImageIcon, Trash2, Upload, X, AlertTriangle } from "lucide-react";
 
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -48,19 +47,13 @@ export default function AdminBanners() {
   async function handleUpload() {
     if (!file) return;
     setUploading(true);
-    const supabase = createClient();
-    const ext = file.name.split(".").pop();
-    const path = `banners/${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from("banners").upload(path, file, { upsert: false });
-    if (upErr) { setFileError("อัปโหลดไม่สำเร็จ: " + upErr.message); setUploading(false); return; }
-    const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(path);
 
-    const res = await fetch("/api/admin/banners", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageUrl: publicUrl }),
-    });
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/api/admin/banners", { method: "POST", body: formData });
     const data = await res.json();
+    if (data.error) { setFileError("อัปโหลดไม่สำเร็จ: " + data.error); setUploading(false); return; }
     if (data.banner) setBanners((prev) => [...prev, data.banner]);
     clearFile();
     setUploading(false);
