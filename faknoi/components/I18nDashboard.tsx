@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowRight, Clock, TrendingUp, MapPin, ShoppingBag, Store, Flame, ChevronDown } from "lucide-react";
 import DashboardChats from "./DashboardChats";
@@ -69,13 +69,23 @@ const UNI_COLORS = [
   { badge: "bg-green-100 text-green-700",      bar: "linear-gradient(90deg,#34d399,#10b981)" },
 ];
 
-export default function I18nDashboard({ username, trips: initialTrips, orders: initialOrders, allActiveOrders, currentUserId, insights }: Props) {
+export default function I18nDashboard({ username, trips: initialTrips, orders: initialOrders, allActiveOrders, currentUserId, insights: initialInsights }: Props) {
   const { lang } = useLang();
   const [selectedUni, setSelectedUni] = useState<string>("all");
   const [trips, setTrips] = useState<any[]>(initialTrips);
   const [orders, setOrders] = useState<any[]>(initialOrders);
   const [activeOrders, setActiveOrders] = useState<any[]>(allActiveOrders);
   const [sortedTrips, setSortedTrips] = useState<any[]>(initialTrips);
+  const [insights, setInsights] = useState(initialInsights);
+
+  const refetchInsights = useCallback(async () => {
+    try {
+      const res = await fetch("/api/insights");
+      if (!res.ok) return;
+      const data = await res.json();
+      setInsights(data);
+    } catch {}
+  }, []);
 
   // Realtime: trips
   useEffect(() => {
@@ -116,15 +126,14 @@ export default function I18nDashboard({ username, trips: initialTrips, orders: i
         const updated = payload.new;
         setOrders((prev) => prev.map((o) => o.id === updated.id ? { ...o, ...updated } : o));
         setActiveOrders((prev) => {
-          // ถ้า status เป็น completed/cancelled ให้เอาออกจาก active
           if (updated.status === "completed" || updated.status === "cancelled") {
             return prev.filter((o) => o.id !== updated.id);
           }
           return prev.map((o) => o.id === updated.id ? { ...o, ...updated } : o);
         });
+        refetchInsights();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, async (payload) => {
-        // เพิ่ม order ใหม่เข้า activeOrders ถ้า user เป็น buyer หรือ shopper
         const { data } = await supabase
           .from("orders")
           .select("id, status, created_at, trip_id, trips(origin_zone, destination_zone, shopper_id, profiles(username)), profiles(username)")
@@ -136,10 +145,11 @@ export default function I18nDashboard({ username, trips: initialTrips, orders: i
         if (isBuyer || isShopper) {
           setActiveOrders((prev) => [data, ...prev]);
         }
+        refetchInsights();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [currentUserId]);
+  }, [currentUserId, refetchInsights]);
   const statusLabel: Record<string, { label: string; color: string; emoji: string }> = {
     pending:    { label: t(lang,"status_pending"),    color: "bg-yellow-100 text-yellow-700",  emoji: "⏳" },
     accepted:   { label: t(lang,"status_accepted"),   color: "bg-blue-100 text-blue-700",      emoji: "✅" },

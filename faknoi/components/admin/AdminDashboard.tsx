@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Users, MapPin, Wallet, TrendingUp, ChevronDown, ArrowRight, Clock, ShoppingBag, Store, Flame, Accessibility } from "lucide-react";
 import { UNIVERSITIES, getUniShortNameById, getZoneNameByThai } from "@/lib/universities";
+import { createClient } from "@/lib/supabase/client";
 
 interface ZoneByUni { uniId: string; uniName: string; zones: [string, number][]; }
 interface ItemByUni { uniId: string; uniName: string; items: [string, number][]; }
@@ -47,9 +48,46 @@ const UNI_COLORS = [
 function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
 function HourLabel(h: number) { const ampm = h < 12 ? "AM" : "PM"; const h12 = h % 12 || 12; return `${h12}:00 ${ampm}`; }
 
-export default function AdminDashboard({ userCount, openTrips, slipsPending, slipsVerified, slipsUpdated, areaStatuses, universities, insights, accessibilityInsights }: Props) {
+export default function AdminDashboard({ userCount: initialUserCount, openTrips: initialOpenTrips, slipsPending: initialSlipsPending, slipsVerified: initialSlipsVerified, slipsUpdated: initialSlipsUpdated, areaStatuses, universities, insights: initialInsights, accessibilityInsights: initialAccessInsights }: Props) {
   const [selectedUni, setSelectedUni] = useState("all");
   const [insightUni, setInsightUni] = useState("all");
+  const [userCount, setUserCount] = useState(initialUserCount);
+  const [openTrips, setOpenTrips] = useState(initialOpenTrips);
+  const [slipsPending, setSlipsPending] = useState(initialSlipsPending);
+  const [slipsVerified, setSlipsVerified] = useState(initialSlipsVerified);
+  const [slipsUpdated, setSlipsUpdated] = useState(initialSlipsUpdated);
+  const [insights, setInsights] = useState(initialInsights);
+  const [accessibilityInsights, setAccessibilityInsights] = useState(initialAccessInsights);
+
+  const refetchStats = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/stats");
+      if (!res.ok) return;
+      const data = await res.json();
+      setUserCount(data.userCount);
+      setOpenTrips(data.openTrips);
+      setSlipsPending(data.slipsPending);
+      setSlipsVerified(data.slipsVerified);
+      setSlipsUpdated(data.slipsUpdated);
+      setInsights(data.insights);
+      setAccessibilityInsights(data.accessibilityInsights);
+    } catch {}
+  }, []);
+
+  // Realtime: refetch stats when orders or trips change
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("admin-dashboard-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        refetchStats();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "trips" }, () => {
+        refetchStats();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [refetchStats]);
 
   const activeAreas = universities.filter((u) => {
     const s = areaStatuses.find((a) => a.university_id === u.id);
