@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, ArrowLeft, ArrowRight, Loader2, Trash2, XCircle, AlertCircle } from "lucide-react";
+import { Search, ArrowLeft, ArrowRight, Loader2, Trash2, XCircle, AlertCircle, Coins, Gift, FileText, CreditCard, Pencil, Check, X } from "lucide-react";
 import Link from "next/link";
 
 interface UserProfile {
@@ -10,6 +10,7 @@ interface UserProfile {
   email: string;
   role: string;
   outstanding_balance: number;
+  coins: number;
   created_at: string;
 }
 
@@ -24,6 +25,10 @@ export default function AdminUsers() {
   const [actionModal, setActionModal] = useState<{ type: string; id: string; label: string } | null>(null);
   const [actionNote, setActionNote] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  // Coins edit
+  const [editCoins, setEditCoins] = useState(false);
+  const [coinsInput, setCoinsInput] = useState("");
+  const [savingCoins, setSavingCoins] = useState(false);
 
   async function searchUsers(q: string) {
     setQuery(q);
@@ -64,6 +69,21 @@ export default function AdminUsers() {
     setActionNote("");
     setActionLoading(false);
     // Reload user data
+    await loadUser(selectedUser);
+  }
+
+  async function saveCoins() {
+    if (!selectedUser) return;
+    const val = parseInt(coinsInput);
+    if (isNaN(val) || val < 0) return;
+    setSavingCoins(true);
+    await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "adjust_coins", targetUserId: selectedUser.id, coins: val, note: `Admin ปรับคอยน์เป็น ${val}` }),
+    });
+    setSavingCoins(false);
+    setEditCoins(false);
     await loadUser(selectedUser);
   }
 

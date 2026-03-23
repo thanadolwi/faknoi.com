@@ -28,13 +28,19 @@ export async function GET(req: Request) {
       { data: trips },
       { data: orders },
       { data: actions },
+      { data: redemptions },
+      { data: reports },
+      { data: slips },
     ] = await Promise.all([
       adminClient.from("profiles").select("*").eq("id", userId).single(),
       adminClient.from("trips").select("*").eq("shopper_id", userId).order("created_at", { ascending: false }),
       adminClient.from("orders").select("*, trips(origin_zone, destination_zone)").eq("buyer_id", userId).order("created_at", { ascending: false }),
       adminClient.from("admin_actions").select("*").eq("target_user_id", userId).order("created_at", { ascending: false }),
+      adminClient.from("coupon_redemptions").select("*, coupons(name, coins_required)").eq("user_id", userId).order("created_at", { ascending: false }),
+      adminClient.from("reports").select("id, subject, report_status, created_at").eq("reporter_id", userId).order("created_at", { ascending: false }),
+      adminClient.from("payment_slips").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
     ]);
-    return NextResponse.json({ profile, trips: trips || [], orders: orders || [], actions: actions || [] });
+    return NextResponse.json({ profile, trips: trips || [], orders: orders || [], actions: actions || [], redemptions: redemptions || [], reports: reports || [], slips: slips || [] });
   }
 
   if (!q) return NextResponse.json({ users: [] });
@@ -67,6 +73,9 @@ export async function POST(req: Request) {
     if (order?.trip_id) {
       await adminClient.rpc("decrement_trip_orders", { trip_id: order.trip_id });
     }
+  } else if (action === "adjust_coins" && targetUserId) {
+    const { coins } = await req.json().catch(() => ({ coins: 0 }));
+    await adminClient.from("profiles").update({ coins: Math.max(0, coins) }).eq("id", targetUserId);
   }
 
   // Log admin action + notify user
