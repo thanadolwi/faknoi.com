@@ -127,7 +127,7 @@ export default function AdminBanners() {
           className="border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-brand-blue/40 hover:bg-brand-blue/5 transition-colors">
           {preview ? (
             <div className="relative w-full">
-              <img src={preview} alt="preview" className="w-full rounded-xl object-cover" style={{ aspectRatio: "16/9" }} />
+              <img src={preview} alt="preview" className="w-full rounded-xl object-cover" style={{ aspectRatio: "2160/900" }} />
               <button type="button" onClick={(e) => { e.stopPropagation(); clearFile(); }}
                 className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center">
                 <X className="w-3 h-3" />
@@ -138,7 +138,7 @@ export default function AdminBanners() {
               <ImageIcon className="w-8 h-8 text-gray-300" />
               <p className="text-xs text-gray-400 font-medium text-center">
                 แตะเพื่อเลือกรูป<br />
-                <span className="text-[10px]">1350×750px · ≤5MB</span>
+                <span className="text-[10px]">2160×900px · ≤5MB</span>
               </p>
             </>
           )}

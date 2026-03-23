@@ -62,7 +62,7 @@ export default function BannerSlider({ initialBanners }: Props) {
 
   return (
     <div className="relative w-full overflow-hidden rounded-3xl shadow-blue-sm"
-      style={{ aspectRatio: "16/9" }}>
+      style={{ aspectRatio: "2160/900" }}>
       {/* Slides */}
       <div className="relative w-full h-full">
         {banners.map((b, i) => (
