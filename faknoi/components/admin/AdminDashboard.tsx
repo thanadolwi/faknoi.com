@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Users, MapPin, Wallet, TrendingUp, ChevronDown, ArrowRight, Clock, ShoppingBag, Store, Flame, Accessibility } from "lucide-react";
 import { UNIVERSITIES, getUniShortNameById, getZoneNameByThai } from "@/lib/universities";
 import { createClient } from "@/lib/supabase/client";
+import AdminBanners from "./AdminBanners";
 
 interface ZoneByUni { uniId: string; uniName: string; zones: [string, number][]; }
 interface ItemByUni { uniId: string; uniName: string; items: [string, number][]; }
@@ -380,6 +381,9 @@ export default function AdminDashboard({ userCount: initialUserCount, openTrips:
       )}
       {/* Accessibility Breakdown */}
       <AccessibilityBreakdown insights={accessibilityInsights} insightUni={insightUni} />
+
+      {/* Banner Management */}
+      <AdminBanners />
 
     </div>
   );

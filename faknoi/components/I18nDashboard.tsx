@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Clock, TrendingUp, MapPin, ShoppingBag, Store, Flame, ChevronDown } from "lucide-react";
 import DashboardChats from "./DashboardChats";
 import NearbyTrips from "./NearbyTrips";
+import BannerSlider from "./BannerSlider";
 import { getUniShortNameById, getZoneNameByThai } from "@/lib/universities";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
@@ -49,6 +50,7 @@ interface Props {
   allActiveOrders: any[];
   currentUserId: string;
   insights: Insights;
+  banners: { id: string; image_url: string; created_at: string }[];
 }
 
 function capitalize(s: string) {
@@ -69,7 +71,7 @@ const UNI_COLORS = [
   { badge: "bg-green-100 text-green-700",      bar: "linear-gradient(90deg,#34d399,#10b981)" },
 ];
 
-export default function I18nDashboard({ username, trips: initialTrips, orders: initialOrders, allActiveOrders, currentUserId, insights: initialInsights }: Props) {
+export default function I18nDashboard({ username, trips: initialTrips, orders: initialOrders, allActiveOrders, currentUserId, insights: initialInsights, banners }: Props) {
   const { lang } = useLang();
   const [selectedUni, setSelectedUni] = useState<string>("all");
   const [trips, setTrips] = useState<any[]>(initialTrips);
@@ -186,6 +188,11 @@ export default function I18nDashboard({ username, trips: initialTrips, orders: i
           </div>
         </div>
       </div>
+
+      {/* Banner Slider */}
+      {banners.length > 0 && (
+        <BannerSlider initialBanners={banners} />
+      )}
 
       {/* Active Order Chats */}
       {activeOrders.length > 0 && (

@@ -1,7 +1,6 @@
 ﻿import { createClient, createAdminClient } from "@/lib/supabase/server";
 import I18nDashboard from "@/components/I18nDashboard";
 import { UNIVERSITIES } from "@/lib/universities";
-
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
@@ -17,6 +16,7 @@ export default async function DashboardPage() {
     { data: buyerActiveOrders },
     { data: shopperTrips },
     { data: recentOrders },
+    { data: banners },
   ] = await Promise.all([
     adminSupabase
       .from("trips")
@@ -43,6 +43,7 @@ export default async function DashboardPage() {
       .select("items, trips(origin_zone, university_id, cutoff_time)")
       .gte("created_at", since)
       .not("status", "eq", "cancelled"),
+    adminSupabase.from("banners").select("*").order("created_at", { ascending: true }),
   ]);
 
   const trips = (allTrips || []).filter((t: any) => t.current_orders < t.max_orders).slice(0, 3);
@@ -135,6 +136,7 @@ export default async function DashboardPage() {
       allActiveOrders={allActiveOrders}
       currentUserId={user?.id || ""}
       insights={{ topZonesByUni, topItemsByUni, topHoursByUni, topShopsByUni, totalRecent }}
+      banners={banners || []}
     />
   );
 }
