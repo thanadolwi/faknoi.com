@@ -6,6 +6,7 @@ import { ArrowRight, Clock, TrendingUp, MapPin, ShoppingBag, Store, Flame, Chevr
 import DashboardChats from "./DashboardChats";
 import NearbyTrips from "./NearbyTrips";
 import BannerSlider from "./BannerSlider";
+import TripRequestBoard from "./TripRequestBoard";
 import { getUniShortNameById, getZoneNameByThai } from "@/lib/universities";
 import { useLang } from "@/lib/LangContext";
 import { t } from "@/lib/i18n";
@@ -247,9 +248,11 @@ export default function I18nDashboard({ username, trips: initialTrips, orders: i
         )}
       </div>
 
+      {/* Trip Request Board */}
+      <TripRequestBoard currentUserId={currentUserId} />
+
       {/* Recent Orders */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
+      <div>        <div className="flex items-center justify-between mb-3">
           <h2 className="font-black text-brand-navy">{t(lang,"dash_recent_orders")}</h2>
           <Link href="/orders" className="text-sm font-bold text-brand-blue hover:underline flex items-center gap-1">
             {t(lang,"dash_see_all")} <ArrowRight className="w-3 h-3" />
