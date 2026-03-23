@@ -78,12 +78,11 @@ export default function OrderTabs({ myOrders: initialMyOrders, shopperOrders: in
           .select("*, trips(origin_zone, destination_zone, shopper_id), profiles(username)")
           .eq("id", payload.new.id).single();
         if (!data) return;
-        // add to myOrders if buyer, shopperOrders if shopper
-        if (data.buyer_id === currentUserId) {
-          setMyOrders((prev) => [data, ...prev]);
+        if ((data as any).buyer_id === currentUserId) {
+          setMyOrders((prev) => [data as any, ...prev]);
         }
-        if (data.trips?.shopper_id === currentUserId) {
-          setShopperOrders((prev) => [data, ...prev]);
+        if ((data as any).trips?.shopper_id === currentUserId) {
+          setShopperOrders((prev) => [data as any, ...prev]);
         }
       })
       .subscribe();

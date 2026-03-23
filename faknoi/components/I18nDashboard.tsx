@@ -84,8 +84,9 @@ export default function I18nDashboard({ username, trips: initialTrips, orders: i
       .channel("dashboard-trips-realtime")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "trips" }, (payload) => {
         const updated = payload.new;
-        const hideStatuses = ["delivering", "completed", "cancelled"];
-        if (hideStatuses.includes(updated.status)) {
+        // เฉพาะ open status เท่านั้นที่แสดงในหน้าหลัก
+        const showStatuses = ["open"];
+        if (!showStatuses.includes(updated.status)) {
           setTrips((prev) => prev.filter((t) => t.id !== updated.id));
           setSortedTrips((prev) => prev.filter((t) => t.id !== updated.id));
         } else {
@@ -94,6 +95,7 @@ export default function I18nDashboard({ username, trips: initialTrips, orders: i
         }
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "trips" }, async (payload) => {
+        if (payload.new.status !== "open") return;
         const { data } = await supabase.from("trips").select("*, profiles(username)").eq("id", payload.new.id).single();
         if (data) {
           setTrips((prev) => [data, ...prev]);

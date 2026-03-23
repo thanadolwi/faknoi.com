@@ -38,17 +38,17 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const admin = createAdminClient();
   const { type, id, status } = await request.json();
 
+  // ใช้ regular client (admin session) แทน admin client เพื่อให้ realtime ทำงาน
   if (type === "trip") {
-    const { error } = await admin.from("trips").update({
+    const { error } = await supabase.from("trips").update({
       status,
       ...(status === "completed" ? { closed_at: new Date().toISOString() } : {}),
     }).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   } else if (type === "order") {
-    const { error } = await admin.from("orders").update({
+    const { error } = await supabase.from("orders").update({
       status,
       updated_at: new Date().toISOString(),
     }).eq("id", id);

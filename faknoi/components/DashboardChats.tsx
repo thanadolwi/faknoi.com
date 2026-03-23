@@ -53,15 +53,22 @@ export default function DashboardChats({ orders, currentUserId, currentUsername 
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "messages", filter: `order_id=eq.${order.id}` },
           (payload) => {
-            // Only count messages from others, and only if not already read
             if (payload.new.sender_id !== currentUserId) {
               const lastRead = parseInt(localStorage.getItem(`chat-read-${order.id}`) || "0");
               const msgTime = new Date(payload.new.created_at).getTime();
               if (msgTime > lastRead) {
-                setUnreadMap((prev) => ({
-                  ...prev,
-                  [order.id]: (prev[order.id] || 0) + 1,
-                }));
+                // ถ้า order นี้กำลังเปิดอยู่ ให้ mark read ทันที ไม่นับ unread
+                setOpenId((currentOpen) => {
+                  if (currentOpen === order.id) {
+                    localStorage.setItem(`chat-read-${order.id}`, Date.now().toString());
+                    return currentOpen;
+                  }
+                  setUnreadMap((prev) => ({
+                    ...prev,
+                    [order.id]: (prev[order.id] || 0) + 1,
+                  }));
+                  return currentOpen;
+                });
               }
             }
           }
