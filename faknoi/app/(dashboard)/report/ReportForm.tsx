@@ -319,8 +319,25 @@ function ReportHistoryCard({ report, lang, currentUserId, statusMeta }: {
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Realtime chat
+  // Realtime chat + load initial unread count
   useEffect(() => {
+    // Load unread count from existing messages
+    async function loadUnread() {
+      const supabase = createClient();
+      const lastRead = parseInt(localStorage.getItem(`report-read-${report.id}`) || "0");
+      const { data } = await supabase
+        .from("report_messages")
+        .select("id, sender_id, created_at")
+        .eq("report_id", report.id)
+        .neq("sender_id", currentUserId)
+        .order("created_at", { ascending: false });
+      if (data) {
+        const unreadCount = data.filter((m) => new Date(m.created_at).getTime() > lastRead).length;
+        setUnread(unreadCount);
+      }
+    }
+    if (currentUserId) loadUnread();
+
     const supabase = createClient();
     const channel = supabase
       .channel(`report-user-chat-${report.id}`)
@@ -330,7 +347,14 @@ function ReportHistoryCard({ report, lang, currentUserId, statusMeta }: {
           return [...prev, payload.new as any];
         });
         if (payload.new.sender_id !== currentUserId) {
-          setUnread((n) => n + 1);
+          setShowChat((isOpen) => {
+            if (isOpen) {
+              localStorage.setItem(`report-read-${report.id}`, Date.now().toString());
+              return isOpen;
+            }
+            setUnread((n) => n + 1);
+            return isOpen;
+          });
         }
         setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
       })
@@ -351,8 +375,11 @@ function ReportHistoryCard({ report, lang, currentUserId, statusMeta }: {
   }
 
   async function toggleChat() {
-    if (!showChat) await loadMessages();
-    else setUnread(0);
+    if (!showChat) {
+      await loadMessages();
+      localStorage.setItem(`report-read-${report.id}`, Date.now().toString());
+    }
+    setUnread(0);
     setShowChat(!showChat);
   }
 
