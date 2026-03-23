@@ -89,8 +89,9 @@ export default function OrderChat({ orderId, currentUserId, embedded = false, is
     if (open) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
       setUnread(0);
-      // บันทึกเวลาอ่านล่าสุดลง localStorage
       localStorage.setItem(`chat-read-${orderId}`, Date.now().toString());
+      // แจ้ง Navbar ว่าอ่านแล้ว
+      window.dispatchEvent(new CustomEvent("chat-all-read"));
     }
   }, [messages, open]);
 

@@ -28,6 +28,18 @@ export default function Navbar({ username }: { username: string }) {
     }
   }, [pathname]);
 
+  // Listen localStorage changes (เมื่อ OrderChat mark read)
+  useEffect(() => {
+    function recalcUnread() {
+      // นับ unread จาก localStorage keys ที่มีอยู่
+      // ถ้า key ไหน timestamp ใหม่กว่า last message ก็ถือว่าอ่านแล้ว
+      // ง่ายสุดคือ reset เป็น 0 แล้วให้ realtime subscription นับใหม่
+      setTotalUnread(0);
+    }
+    window.addEventListener("chat-all-read", recalcUnread);
+    return () => window.removeEventListener("chat-all-read", recalcUnread);
+  }, []);
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
