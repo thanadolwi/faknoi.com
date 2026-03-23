@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
   const { data: { publicUrl } } = admin.storage.from("banners").getPublicUrl(path);
 
-  const { data, error } = await admin.from("banners").insert({ image_url: publicUrl, created_by: user.id }).select().single();
+  const { data, error } = await admin.from("banners").insert({ image_url: publicUrl, created_by: user.id, caption: formData.get("caption") as string || null, link_url: formData.get("linkUrl") as string || null }).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ banner: data });
 }

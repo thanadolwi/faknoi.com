@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ImageIcon, Trash2, Upload, X, AlertTriangle } from "lucide-react";
+import { ImageIcon, Trash2, Upload, X, AlertTriangle, Link as LinkIcon } from "lucide-react";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 
 interface Banner {
   id: string;
   image_url: string;
+  caption: string | null;
+  link_url: string | null;
   created_at: string;
 }
 
@@ -17,6 +19,8 @@ export default function AdminBanners() {
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [caption, setCaption] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
   const [fileError, setFileError] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -41,6 +45,8 @@ export default function AdminBanners() {
     setFile(null);
     setPreview(null);
     setFileError("");
+    setCaption("");
+    setLinkUrl("");
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -50,6 +56,8 @@ export default function AdminBanners() {
 
     const formData = new FormData();
     formData.append("file", file);
+    if (caption.trim()) formData.append("caption", caption.trim());
+    if (linkUrl.trim()) formData.append("linkUrl", linkUrl.trim());
 
     const res = await fetch("/api/admin/banners", { method: "POST", body: formData });
     const data = await res.json();
@@ -61,7 +69,6 @@ export default function AdminBanners() {
 
   async function handleDelete(banner: Banner) {
     setDeleting(banner.id);
-    // extract path from URL
     const url = new URL(banner.image_url);
     const parts = url.pathname.split("/banners/");
     const imagePath = parts[1] ? `banners/${parts[1]}` : undefined;
@@ -97,6 +104,12 @@ export default function AdminBanners() {
                   className="w-20 h-11 object-cover rounded-xl flex-shrink-0 border border-gray-100" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-brand-navy">Banner {i + 1}</p>
+                  {b.caption && <p className="text-[10px] text-gray-600 truncate">{b.caption}</p>}
+                  {b.link_url && (
+                    <p className="text-[10px] text-brand-blue truncate flex items-center gap-0.5">
+                      <LinkIcon className="w-2.5 h-2.5 flex-shrink-0" />{b.link_url}
+                    </p>
+                  )}
                   <p className="text-[10px] text-gray-400">
                     {new Date(b.created_at).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" })}
                   </p>
@@ -114,8 +127,10 @@ export default function AdminBanners() {
       </div>
 
       {/* Upload new */}
-      <div>
-        <p className="text-xs font-black text-gray-500 mb-2">เพิ่ม/ลบโฆษณา</p>
+      <div className="space-y-3">
+        <p className="text-xs font-black text-gray-500">เพิ่ม/ลบโฆษณา</p>
+
+        {/* Image picker */}
         <div onClick={() => fileRef.current?.click()}
           className="border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-brand-blue/40 hover:bg-brand-blue/5 transition-colors">
           {preview ? (
@@ -137,14 +152,30 @@ export default function AdminBanners() {
           )}
         </div>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+
+        {/* Caption */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 block mb-1">ข้อความใต้ภาพ (ไม่บังคับ)</label>
+          <input type="text" className="input-field text-sm" placeholder="เช่น โปรโมชั่นพิเศษ ลด 20%"
+            value={caption} onChange={(e) => setCaption(e.target.value)} />
+        </div>
+
+        {/* Link URL */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 block mb-1">ลิงก์ (ไม่บังคับ)</label>
+          <input type="url" className="input-field text-sm" placeholder="https://..."
+            value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} />
+        </div>
+
         {fileError && (
-          <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+          <p className="text-xs text-red-500 flex items-center gap-1">
             <AlertTriangle className="w-3.5 h-3.5" />{fileError}
           </p>
         )}
+
         {file && (
           <button onClick={handleUpload} disabled={uploading}
-            className="btn-primary w-full mt-3 py-2.5 text-sm flex items-center justify-center gap-2">
+            className="btn-primary w-full py-2.5 text-sm flex items-center justify-center gap-2">
             {uploading
               ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               : <><Upload className="w-4 h-4" /> อัปโหลดโฆษณา</>}

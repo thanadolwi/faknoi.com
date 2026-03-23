@@ -190,9 +190,7 @@ export default function I18nDashboard({ username, trips: initialTrips, orders: i
       </div>
 
       {/* Banner Slider */}
-      {banners.length > 0 && (
-        <BannerSlider initialBanners={banners} />
-      )}
+      <BannerSlider initialBanners={banners} />
 
       {/* Active Order Chats */}
       {activeOrders.length > 0 && (
