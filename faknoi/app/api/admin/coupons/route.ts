@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
     image_url = urlData.publicUrl;
   }
 
-  const { data, error } = await admin.from("coupons").insert({
+  // ใช้ regular client เพื่อให้ realtime ยิง event ไปหา subscribers
+  const { data, error } = await supabase.from("coupons").insert({
     name, description, coins_required, valid_from, valid_until,
     contact_info, is_active, notice, image_url,
   }).select().single();
