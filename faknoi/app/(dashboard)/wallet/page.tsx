@@ -82,40 +82,60 @@ export default function WalletPage() {
     load();
   }, []);
 
-  // Realtime: subscribe to payment_slips updates
+  async function refreshWallet(supabase: ReturnType<typeof createClient>) {
+    // Refresh outstanding balance
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("outstanding_balance")
+      .eq("id", userId)
+      .single();
+    if (profile) setOutstanding(Number(profile.outstanding_balance || 0));
+
+    // Refresh completed orders (shopper)
+    const { data: myTrips } = await supabase.from("trips").select("id").eq("shopper_id", userId);
+    const tripIds = (myTrips || []).map((t: any) => t.id);
+    if (tripIds.length) {
+      const { data } = await supabase
+        .from("orders")
+        .select("id, final_price, created_at, trips(origin_zone, destination_zone)")
+        .in("trip_id", tripIds)
+        .eq("status", "completed")
+        .not("final_price", "is", null)
+        .order("created_at", { ascending: false });
+      setOrders(data || []);
+    }
+  }
+
+  // Realtime: subscribe to payment_slips + orders + profiles updates
   useEffect(() => {
     if (!userId) return;
     const supabase = createClient();
     const channel = supabase
-      .channel(`wallet-slips-${userId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "payment_slips" },
-        async () => {
-          // Refresh my slips
-          const { data: slips } = await supabase
-            .from("payment_slips")
-            .select("*")
-            .eq("user_id", userId)
-            .order("created_at", { ascending: false });
-          setMySlips(slips || []);
-          // Admin: refresh all slips
-          if (isAdmin) {
-            const res = await fetch("/api/admin/slips");
-            const json = await res.json();
-            setAllSlips(json.slips || []);
-          }
-          // Refresh outstanding balance
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("outstanding_balance")
-            .eq("id", userId)
-            .single();
-          if (profile) setOutstanding(Number(profile.outstanding_balance || 0));
+      .channel(`wallet-realtime-${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_slips" }, async () => {
+        const { data: slips } = await supabase
+          .from("payment_slips")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false });
+        setMySlips(slips || []);
+        if (isAdmin) {
+          const res = await fetch("/api/admin/slips");
+          const json = await res.json();
+          setAllSlips(json.slips || []);
         }
-      )
+        await refreshWallet(supabase);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, async () => {
+        await refreshWallet(supabase);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${userId}` }, (payload) => {
+        const p = payload.new as any;
+        if (p?.outstanding_balance !== undefined) setOutstanding(Number(p.outstanding_balance || 0));
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, isAdmin]);
 
   const totalActual = orders.reduce((s, o) => s + Number(o.final_price), 0);
