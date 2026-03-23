@@ -210,12 +210,22 @@ export default function WalletPage() {
   return (
     <div className="max-w-lg mx-auto space-y-5 pb-10">
       <div>
-        <h1 className="text-xl font-black text-brand-navy">{t(lang, "w_title")}</h1>
+        <h1 className="text-xl font-black text-brand-navy">🪙 คอยน์ของฉัน</h1>
         <p className="text-sm text-gray-400 mt-0.5">{t(lang, "w_subtitle")}</p>
       </div>
 
       {/* Coins & Coupons — only for non-admin */}
       {!isAdmin && userId && <UserCoins userId={userId} initialCoins={0} />}
+
+      {/* Wallet section heading */}
+      {!isAdmin && (
+        <div className="pt-2">
+          <h2 className="text-base font-black text-brand-navy flex items-center gap-2">
+            💰 ถุงเงิน
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">สรุปยอดราคาสุทธิและค่าบริการ FakNoi</p>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
