@@ -133,7 +133,7 @@ export default function OrderChat({ orderId, currentUserId, embedded = false, is
         .from("chat-images")
         .upload(path, imageFile, { upsert: false });
       if (uploadErr) {
-        setImageError("อัปโหลดรูปไม่สำเร็จ");
+        setImageError("อัปโหลดรูปไม่สำเร็จ: " + uploadErr.message);
         setLoading(false);
         setUploading(false);
         return;
