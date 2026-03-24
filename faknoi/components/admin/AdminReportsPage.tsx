@@ -130,6 +130,7 @@ function AdminReportCard({ report, adminId, onStatusChange }: {
   const [messages, setMessages] = useState<any[]>([]);
   const [msgText, setMsgText] = useState("");
   const [sending, setSending] = useState(false);
+  const [unread, setUnread] = useState(0);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageError, setImageError] = useState("");
@@ -138,8 +139,23 @@ function AdminReportCard({ report, adminId, onStatusChange }: {
   const fileRef = useRef<HTMLInputElement>(null);
   const s = statusMeta[report.report_status] || statusMeta.pending;
 
-  // Realtime chat subscription
+  // Load initial unread count + realtime chat subscription
   useEffect(() => {
+    // นับ unread จาก messages ที่ไม่ใช่ของ admin
+    async function loadUnread() {
+      const supabase = createClient();
+      const lastRead = parseInt(localStorage.getItem(`report-read-${report.id}`) || "0");
+      const { data } = await supabase
+        .from("report_messages")
+        .select("id, sender_id, created_at")
+        .eq("report_id", report.id)
+        .neq("sender_id", adminId);
+      if (data) {
+        setUnread(data.filter((m) => new Date(m.created_at).getTime() > lastRead).length);
+      }
+    }
+    loadUnread();
+
     const supabase = createClient();
     const channel = supabase
       .channel(`report-chat-admin-${report.id}`)
@@ -148,15 +164,25 @@ function AdminReportCard({ report, adminId, onStatusChange }: {
         filter: `report_id=eq.${report.id}`
       }, (payload) => {
         setMessages((prev) => {
-          // avoid duplicates
           if (prev.find((m) => m.id === payload.new.id)) return prev;
           return [...prev, payload.new as any];
         });
+        // ถ้าไม่ใช่ข้อความของ admin และ chat ยังปิดอยู่ → เพิ่ม unread
+        if (payload.new.sender_id !== adminId) {
+          setShowChat((isOpen) => {
+            if (isOpen) {
+              localStorage.setItem(`report-read-${report.id}`, Date.now().toString());
+              return isOpen;
+            }
+            setUnread((n) => n + 1);
+            return isOpen;
+          });
+        }
         setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [report.id]);
+  }, [report.id, adminId]);
 
   async function loadMessages() {
     const supabase = createClient();
@@ -166,11 +192,14 @@ function AdminReportCard({ report, adminId, onStatusChange }: {
       .eq("report_id", report.id)
       .order("created_at", { ascending: true });
     setMessages(data || []);
+    setUnread(0);
+    localStorage.setItem(`report-read-${report.id}`, Date.now().toString());
     setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   }
 
   async function toggleChat() {
     if (!showChat) await loadMessages();
+    else setUnread(0);
     setShowChat(!showChat);
   }
 
@@ -264,9 +293,14 @@ function AdminReportCard({ report, adminId, onStatusChange }: {
 
       {/* Chat toggle */}
       <button onClick={toggleChat}
-        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors relative">
         <MessageCircle className="w-4 h-4 text-brand-blue" />
         แชทกับผู้รายงาน
+        {unread > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black px-1 py-0.5 rounded-full min-w-[16px] text-center leading-none">
+            {unread}
+          </span>
+        )}
         {showChat ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
       </button>
 
