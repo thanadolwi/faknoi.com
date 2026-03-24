@@ -59,7 +59,8 @@ export async function POST(req: Request) {
   const adminUser = await checkAdmin();
   if (!adminUser) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { action, targetUserId, tripId, orderId, note } = await req.json();
+  const body = await req.json();
+  const { action, targetUserId, tripId, orderId, note, coins } = body;
   const adminClient = createAdminClient();
 
   if (action === "cancel_trip" && tripId) {
@@ -74,8 +75,8 @@ export async function POST(req: Request) {
       await adminClient.rpc("decrement_trip_orders", { trip_id: order.trip_id });
     }
   } else if (action === "adjust_coins" && targetUserId) {
-    const { coins } = await req.json().catch(() => ({ coins: 0 }));
-    await adminClient.from("profiles").update({ coins: Math.max(0, coins) }).eq("id", targetUserId);
+    const val = typeof coins === "number" ? coins : parseInt(coins ?? "0");
+    await adminClient.from("profiles").update({ coins: Math.max(0, val) }).eq("id", targetUserId);
   }
 
   // Log admin action + notify user
