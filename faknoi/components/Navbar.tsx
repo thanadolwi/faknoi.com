@@ -55,17 +55,15 @@ export default function Navbar({ username }: { username: string }) {
   useEffect(() => {
     if (!currentUserId) return;
     const supabase = createClient();
+    let channels: ReturnType<typeof supabase.channel>[] = [];
 
-    // Get active order IDs for this user (as buyer or shopper)
     async function subscribeUnread() {
-      // Fetch orders where user is buyer
       const { data: buyerOrders } = await supabase
         .from("orders")
         .select("id")
         .eq("buyer_id", currentUserId)
         .not("status", "in", '("completed","cancelled")');
 
-      // Fetch orders where user is shopper (via trips)
       const { data: myTrips } = await supabase
         .from("trips")
         .select("id")
@@ -91,33 +89,29 @@ export default function Navbar({ username }: { username: string }) {
 
       if (!allOrderIds.length) return;
 
-      const channel = supabase
-        .channel(`navbar-unread-${currentUserId}`)
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "messages" },
-          (payload) => {
-            if (
-              allOrderIds.includes(payload.new.order_id) &&
-              payload.new.sender_id !== currentUserId
-            ) {
-              // ตรวจสอบว่า order นี้ถูกอ่านแล้วหรือยัง
-              const readKey = `chat-read-${payload.new.order_id}`;
+      // สร้าง channel แยกต่อ order พร้อม filter ที่ Supabase level
+      channels = allOrderIds.map((orderId) =>
+        supabase
+          .channel(`navbar-unread-${currentUserId}-${orderId}`)
+          .on(
+            "postgres_changes",
+            { event: "INSERT", schema: "public", table: "messages", filter: `order_id=eq.${orderId}` },
+            (payload) => {
+              if (payload.new.sender_id === currentUserId) return;
+              const readKey = `chat-read-${orderId}`;
               const lastRead = localStorage.getItem(readKey);
               const msgTime = new Date(payload.new.created_at).getTime();
               if (!lastRead || msgTime > parseInt(lastRead)) {
                 setTotalUnread((n) => n + 1);
               }
             }
-          }
-        )
-        .subscribe();
-
-      return () => { supabase.removeChannel(channel); };
+          )
+          .subscribe()
+      );
     }
 
-    const cleanup = subscribeUnread();
-    return () => { cleanup.then((fn) => fn && fn()); };
+    subscribeUnread();
+    return () => { channels.forEach((ch) => supabase.removeChannel(ch)); };
   }, [currentUserId]);
 
   // Admin: subscribe to new report messages from users
