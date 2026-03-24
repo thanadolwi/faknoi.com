@@ -178,7 +178,7 @@ export default function I18nDashboard({ username, trips: initialTrips, orders: i
           <h1 className="text-2xl font-black mb-5 tracking-tight">{username}</h1>
           <div className="flex flex-wrap gap-2.5">
             <Link href="/trips"
-              className="flex items-center gap-2 bg-white/20 text-white text-sm font-bold px-4 py-2.5 rounded-2xl hover:bg-white/30 active:scale-95 transition-all duration-150 border border-white/20">
+              className="flex items-center gap-2 bg-sky-400/80 text-white text-sm font-bold px-4 py-2.5 rounded-2xl hover:bg-sky-400 active:scale-95 transition-all duration-150 border border-sky-300/40">
               {t(lang,"dash_all_trips")}
             </Link>
             <Link href="/trips/create"

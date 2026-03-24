@@ -76,9 +76,55 @@ export async function PATCH(req: NextRequest) {
   const { data: profile } = await supabase.from("profiles").select("role, username").eq("id", user.id).single();
   if (profile?.role !== "admin" && profile?.username !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const contentType = req.headers.get("content-type") || "";
+  const admin = createAdminClient();
+
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await req.formData();
+    const id = formData.get("id") as string;
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+    const updates: Record<string, unknown> = {
+      name: formData.get("name") as string,
+      description: formData.get("description") as string,
+      company: (formData.get("company") as string) || null,
+      coins_required: parseInt(formData.get("coins_required") as string),
+      valid_from: (formData.get("valid_from") as string) || null,
+      valid_until: (formData.get("valid_until") as string) || null,
+      contact_info: (formData.get("contact_info") as string) || null,
+      contact_email: (formData.get("contact_email") as string) || null,
+      contact_phone: (formData.get("contact_phone") as string) || null,
+      contact_line: (formData.get("contact_line") as string) || null,
+      contact_facebook: (formData.get("contact_facebook") as string) || null,
+      contact_instagram: (formData.get("contact_instagram") as string) || null,
+      status: formData.get("status") as string,
+      is_active: formData.get("is_active") === "true",
+      notice: (formData.get("notice") as string) || null,
+    };
+
+    const maxRaw = formData.get("max_redemptions") as string;
+    updates.max_redemptions = maxRaw && !isNaN(parseInt(maxRaw)) ? parseInt(maxRaw) : null;
+
+    const imageFile = formData.get("image") as File | null;
+    if (imageFile && imageFile.size > 0) {
+      if (imageFile.size > 5 * 1024 * 1024) return NextResponse.json({ error: "ไฟล์ใหญ่เกิน 5MB" }, { status: 400 });
+      const ext = imageFile.name.split(".").pop();
+      const path = `coupons/${Date.now()}.${ext}`;
+      const buf = Buffer.from(await imageFile.arrayBuffer());
+      const { error: upErr } = await admin.storage.from("coupon-images").upload(path, buf, { contentType: imageFile.type, upsert: true });
+      if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+      const { data: urlData } = admin.storage.from("coupon-images").getPublicUrl(path);
+      updates.image_url = urlData.publicUrl;
+    }
+
+    const { error } = await supabase.from("coupons").update(updates).eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  // JSON patch (status/notice only)
   const body = await req.json();
   const { id, ...updates } = body;
-  // ใช้ regular client เพื่อให้ realtime ยิง event
   const { error } = await supabase.from("coupons").update(updates).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

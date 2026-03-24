@@ -77,6 +77,9 @@ export async function POST(req: Request) {
   } else if (action === "adjust_coins" && targetUserId) {
     const val = typeof coins === "number" ? coins : parseInt(coins ?? "0");
     await adminClient.from("profiles").update({ coins: Math.max(0, val) }).eq("id", targetUserId);
+  } else if (action === "adjust_balance" && targetUserId) {
+    const val = typeof body.balance === "number" ? body.balance : parseFloat(body.balance ?? "0");
+    await adminClient.from("profiles").update({ outstanding_balance: Math.max(0, val) }).eq("id", targetUserId);
   }
 
   // Log admin action + notify user
