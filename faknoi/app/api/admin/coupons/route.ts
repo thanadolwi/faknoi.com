@@ -117,16 +117,16 @@ export async function PATCH(req: NextRequest) {
       updates.image_url = urlData.publicUrl;
     }
 
-    const { error } = await supabase.from("coupons").update(updates).eq("id", id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const { error: updateError } = await supabase.from("coupons").update(updates).eq("id", id);
+    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 
   // JSON patch (status/notice only)
   const body = await req.json();
-  const { id, ...updates } = body;
-  const { error } = await supabase.from("coupons").update(updates).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const { id: jsonId, ...jsonUpdates } = body;
+  const { error: jsonError } = await supabase.from("coupons").update(jsonUpdates).eq("id", jsonId);
+  if (jsonError) return NextResponse.json({ error: jsonError.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 
