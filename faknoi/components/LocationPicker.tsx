@@ -18,6 +18,14 @@ interface SearchResult {
   display_name: string;
   lat: string;
   lon: string;
+  name?: string;
+  address?: {
+    road?: string;
+    suburb?: string;
+    city?: string;
+    town?: string;
+    district?: string;
+  };
 }
 
 export default function LocationPicker({ title, value, onChange, color = "blue" }: Props) {
@@ -47,9 +55,17 @@ export default function LocationPicker({ title, value, onChange, color = "blue" 
     searchTimeout.current = setTimeout(async () => {
       setSearching(true);
       try {
+        const params = new URLSearchParams({
+          q: q,
+          format: "json",
+          limit: "7",
+          countrycodes: "th",
+          addressdetails: "1",
+          "accept-language": "th",
+        });
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&accept-language=th`,
-          { headers: { "Accept-Language": "th" } }
+          `https://nominatim.openstreetmap.org/search?${params}`,
+          { headers: { "User-Agent": "FaknoiApp/1.0" } }
         );
         const data: SearchResult[] = await res.json();
         setSearchResults(data);
@@ -57,13 +73,14 @@ export default function LocationPicker({ title, value, onChange, color = "blue" 
         setSearchResults([]);
       }
       setSearching(false);
-    }, 600);
+    }, 400);
   }, []);
 
   function selectSearchResult(r: SearchResult) {
     const ll = { lat: parseFloat(r.lat), lng: parseFloat(r.lon) };
     setDraft(ll);
-    setSearchQuery(r.display_name.split(",")[0]);
+    const label = r.name || r.display_name.split(",")[0];
+    setSearchQuery(label);
     setSearchResults([]);
   }
 
@@ -169,8 +186,10 @@ export default function LocationPicker({ title, value, onChange, color = "blue" 
                         className="w-full text-left px-4 py-2.5 text-sm hover:bg-brand-blue/5 transition-colors border-b border-gray-50 last:border-0"
                         onClick={() => selectSearchResult(r)}
                       >
-                        <p className="font-semibold text-brand-navy truncate">{r.display_name.split(",")[0]}</p>
-                        <p className="text-xs text-gray-400 truncate">{r.display_name.split(",").slice(1, 3).join(",")}</p>
+                        <p className="font-semibold text-brand-navy truncate">{r.name || r.display_name.split(",")[0]}</p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {[r.address?.road, r.address?.suburb || r.address?.district, r.address?.city || r.address?.town].filter(Boolean).join(", ") || r.display_name.split(",").slice(1, 3).join(",")}
+                        </p>
                       </button>
                     ))}
                   </div>

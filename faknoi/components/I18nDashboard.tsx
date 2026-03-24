@@ -95,16 +95,25 @@ export default function I18nDashboard({ username, trips: initialTrips, orders: i
     const supabase = createClient();
     const channel = supabase
       .channel("dashboard-trips-realtime")
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "trips" }, (payload) => {
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "trips" }, async (payload) => {
         const updated = payload.new;
-        // เฉพาะ open status เท่านั้นที่แสดงในหน้าหลัก
-        const showStatuses = ["open"];
-        if (!showStatuses.includes(updated.status)) {
+        if (updated.status !== "open") {
+          // ถ้าไม่ใช่ open → เอาออกจาก list
           setTrips((prev) => prev.filter((t) => t.id !== updated.id));
           setSortedTrips((prev) => prev.filter((t) => t.id !== updated.id));
         } else {
-          setTrips((prev) => prev.map((t) => t.id === updated.id ? { ...t, ...updated } : t));
-          setSortedTrips((prev) => prev.map((t) => t.id === updated.id ? { ...t, ...updated } : t));
+          // open → fetch ข้อมูลเต็มแล้ว upsert เข้า list
+          const { data } = await supabase.from("trips").select("*, profiles(username)").eq("id", updated.id).single();
+          if (data) {
+            setTrips((prev) => {
+              const exists = prev.some((t) => t.id === data.id);
+              return exists ? prev.map((t) => t.id === data.id ? data : t) : [data, ...prev];
+            });
+            setSortedTrips((prev) => {
+              const exists = prev.some((t) => t.id === data.id);
+              return exists ? prev.map((t) => t.id === data.id ? data : t) : [data, ...prev];
+            });
+          }
         }
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "trips" }, async (payload) => {
