@@ -8,10 +8,16 @@ interface Coupon {
   id: string;
   name: string;
   description: string;
+  company: string | null;
   coins_required: number;
   valid_from: string | null;
   valid_until: string | null;
   contact_info: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  contact_line: string | null;
+  contact_facebook: string | null;
+  contact_instagram: string | null;
   is_active: boolean;
   notice: string | null;
   image_url: string | null;
@@ -24,8 +30,9 @@ export default function AdminCoupons() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    name: "", description: "", coins_required: "", valid_from: "", valid_until: "",
-    contact_info: "", is_active: true, notice: "",
+    name: "", description: "", company: "", coins_required: "", valid_from: "", valid_until: "",
+    contact_info: "", contact_email: "", contact_phone: "", contact_line: "", contact_facebook: "",
+    contact_instagram: "", is_active: true, notice: "",
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -71,10 +78,16 @@ export default function AdminCoupons() {
     const fd = new FormData();
     fd.append("name", form.name);
     fd.append("description", form.description);
+    fd.append("company", form.company);
     fd.append("coins_required", form.coins_required);
     fd.append("valid_from", form.valid_from);
     fd.append("valid_until", form.valid_until);
     fd.append("contact_info", form.contact_info);
+    fd.append("contact_email", form.contact_email);
+    fd.append("contact_phone", form.contact_phone);
+    fd.append("contact_line", form.contact_line);
+    fd.append("contact_facebook", form.contact_facebook);
+    fd.append("contact_instagram", form.contact_instagram);
     fd.append("is_active", String(form.is_active));
     fd.append("notice", form.notice);
     if (imageFile) fd.append("image", imageFile);
@@ -82,7 +95,7 @@ export default function AdminCoupons() {
     const res = await fetch("/api/admin/coupons", { method: "POST", body: fd });
     const json = await res.json();
     if (!res.ok) { setError(json.error || "เกิดข้อผิดพลาด"); setSaving(false); return; }
-    setForm({ name: "", description: "", coins_required: "", valid_from: "", valid_until: "", contact_info: "", is_active: true, notice: "" });
+    setForm({ name: "", description: "", company: "", coins_required: "", valid_from: "", valid_until: "", contact_info: "", contact_email: "", contact_phone: "", contact_line: "", contact_facebook: "", contact_instagram: "", is_active: true, notice: "" });
     setImageFile(null); setImagePreview(null);
     setShowForm(false);
     setSaving(false);
@@ -137,6 +150,7 @@ export default function AdminCoupons() {
         <div className="card space-y-3 border-2 border-brand-blue/20">
           <p className="font-black text-brand-navy text-sm">เพิ่มคูปองใหม่</p>
           <input className="input-field text-sm" placeholder="ชื่อคูปอง *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <input className="input-field text-sm" placeholder="บริษัท / ร้านค้า" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
           <textarea className="input-field text-sm resize-none" rows={2} placeholder="รายละเอียดคูปอง" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <input className="input-field text-sm" type="number" min="1" placeholder="จำนวนคอยน์ที่ต้องใช้ *" value={form.coins_required} onChange={(e) => setForm({ ...form, coins_required: e.target.value })} />
           <div className="grid grid-cols-2 gap-2">
@@ -149,7 +163,12 @@ export default function AdminCoupons() {
               <input className="input-field text-sm" type="datetime-local" value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} />
             </div>
           </div>
-          <input className="input-field text-sm" placeholder="ข้อมูลการติดต่อ" value={form.contact_info} onChange={(e) => setForm({ ...form, contact_info: e.target.value })} />
+          <p className="text-xs font-black text-gray-500 uppercase tracking-wider">ข้อมูลการติดต่อ (ไม่บังคับ)</p>
+          <input className="input-field text-sm" placeholder="📧 อีเมล" value={form.contact_email} onChange={(e) => setForm({ ...form, contact_email: e.target.value })} />
+          <input className="input-field text-sm" placeholder="📞 เบอร์โทรศัพท์" value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} />
+          <input className="input-field text-sm" placeholder="💬 Line ID" value={form.contact_line} onChange={(e) => setForm({ ...form, contact_line: e.target.value })} />
+          <input className="input-field text-sm" placeholder="📘 Facebook (URL หรือชื่อ)" value={form.contact_facebook} onChange={(e) => setForm({ ...form, contact_facebook: e.target.value })} />
+          <input className="input-field text-sm" placeholder="📸 Instagram (@username)" value={form.contact_instagram} onChange={(e) => setForm({ ...form, contact_instagram: e.target.value })} />
           <textarea className="input-field text-sm resize-none" rows={2} placeholder="หมายเหตุ (แสดงให้ user เห็น เช่น ปิดรับการแลกชั่วคราว)" value={form.notice} onChange={(e) => setForm({ ...form, notice: e.target.value })} />
 
           {/* Image upload */}

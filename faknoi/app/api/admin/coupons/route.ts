@@ -21,10 +21,16 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
+  const company = formData.get("company") as string;
   const coins_required = parseInt(formData.get("coins_required") as string);
   const valid_from = formData.get("valid_from") as string;
   const valid_until = formData.get("valid_until") as string;
   const contact_info = formData.get("contact_info") as string;
+  const contact_email = formData.get("contact_email") as string;
+  const contact_phone = formData.get("contact_phone") as string;
+  const contact_line = formData.get("contact_line") as string;
+  const contact_facebook = formData.get("contact_facebook") as string;
+  const contact_instagram = formData.get("contact_instagram") as string;
   const is_active = formData.get("is_active") === "true";
   const notice = formData.get("notice") as string;
   const imageFile = formData.get("image") as File | null;
@@ -45,8 +51,15 @@ export async function POST(req: NextRequest) {
 
   // ใช้ regular client เพื่อให้ realtime ยิง event ไปหา subscribers
   const { data, error } = await supabase.from("coupons").insert({
-    name, description, coins_required, valid_from, valid_until,
-    contact_info, is_active, notice, image_url,
+    name, description, company: company || null, coins_required,
+    valid_from: valid_from || null, valid_until: valid_until || null,
+    contact_info: contact_info || null,
+    contact_email: contact_email || null,
+    contact_phone: contact_phone || null,
+    contact_line: contact_line || null,
+    contact_facebook: contact_facebook || null,
+    contact_instagram: contact_instagram || null,
+    is_active, notice: notice || null, image_url,
   }).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
