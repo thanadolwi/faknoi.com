@@ -32,6 +32,9 @@ export async function POST(req: NextRequest) {
   const contact_facebook = formData.get("contact_facebook") as string;
   const contact_instagram = formData.get("contact_instagram") as string;
   const is_active = formData.get("is_active") === "true";
+  const status = (formData.get("status") as string) || "open";
+  const max_redemptions_raw = formData.get("max_redemptions") as string;
+  const max_redemptions = max_redemptions_raw && !isNaN(parseInt(max_redemptions_raw)) ? parseInt(max_redemptions_raw) : null;
   const notice = formData.get("notice") as string;
   const imageFile = formData.get("image") as File | null;
 
@@ -59,7 +62,7 @@ export async function POST(req: NextRequest) {
     contact_line: contact_line || null,
     contact_facebook: contact_facebook || null,
     contact_instagram: contact_instagram || null,
-    is_active, notice: notice || null, image_url,
+    is_active, status, max_redemptions, notice: notice || null, image_url,
   }).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
