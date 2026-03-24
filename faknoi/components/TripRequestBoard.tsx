@@ -165,14 +165,29 @@ export default function TripRequestBoard({ currentUserId }: Props) {
 
           <div>
             <label className="text-xs text-gray-500 font-medium mb-1 block">โซน *</label>
-            <select className="input-field text-sm" value={form.zone}
-              onChange={(e) => setForm({ ...form, zone: e.target.value })}
+            <select className="input-field text-sm" value={form.zone === "" || zones.includes(form.zone) ? form.zone : "other"}
+              onChange={(e) => {
+                if (e.target.value === "other") {
+                  setForm({ ...form, zone: "__other__" });
+                } else {
+                  setForm({ ...form, zone: e.target.value });
+                }
+              }}
               disabled={!form.university_id}>
               <option value="">เลือกโซน</option>
               {zones.map((z) => (
                 <option key={z} value={z}>{z}</option>
               ))}
+              <option value="other">อื่นๆ (กรอกเอง)</option>
             </select>
+            {(form.zone === "__other__" || (form.zone !== "" && !zones.includes(form.zone) && form.zone !== "__other__")) && (
+              <input
+                className="input-field text-sm mt-2"
+                placeholder="กรอกชื่อโซน..."
+                value={form.zone === "__other__" ? "" : form.zone}
+                onChange={(e) => setForm({ ...form, zone: e.target.value })}
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-2">
