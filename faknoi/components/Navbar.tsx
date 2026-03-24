@@ -137,6 +137,7 @@ export default function Navbar({ username }: { username: string }) {
     { href: "/admin/areas",   label: "พื้นที่",   icon: MapPin,           emoji: "🏫",  unread: 0 },
     { href: "/admin/wallet",  label: "ถุงเงิน",   icon: Wallet,           emoji: "💰",  unread: 0 },
     { href: "/admin/reports", label: "รายงาน",    icon: AlertTriangle,    emoji: "📋",  unread: 0 },
+    { href: "/orders",        label: "แชท",       icon: MessageCircle,    emoji: "💬",  unread: totalUnread },
   ] : [
     { href: "/dashboard", label: t(lang, "nav_home"),   icon: LayoutDashboard, emoji: "🏠",  unread: 0 },
     { href: "/trips",     label: t(lang, "nav_trips"),  icon: MapPin,           emoji: "🛵",  unread: 0 },
@@ -189,7 +190,7 @@ export default function Navbar({ username }: { username: string }) {
           </Link>
 
           <nav className="flex items-center gap-1">
-            {navItems.slice(0, 5).map(({ href, label, icon: Icon, unread }) => {
+            {navItems.slice(0, 6).map(({ href, label, icon: Icon, unread }) => {
               const active = pathname === href || pathname.startsWith(href + "/");
               return (
                 <Link key={href} href={href} onClick={() => { if (href === "/orders") setTotalUnread(0); }}
