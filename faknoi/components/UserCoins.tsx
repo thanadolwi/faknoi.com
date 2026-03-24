@@ -174,7 +174,7 @@ export default function UserCoins({ userId, initialCoins }: Props) {
           {selected.description && (
             <div className="space-y-1">
               <p className="text-xs font-black text-gray-500 uppercase tracking-wider">รายละเอียดและเงื่อนไข</p>
-              <p className="text-sm text-gray-700 leading-relaxed">{selected.description}</p>
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{selected.description}</p>
             </div>
           )}
 
