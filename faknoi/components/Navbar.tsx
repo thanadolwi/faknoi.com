@@ -18,13 +18,17 @@ export default function Navbar({ username }: { username: string }) {
   const { lang } = useLang();
   const [isAdmin, setIsAdmin] = useState(false);
   const [totalUnread, setTotalUnread] = useState(0);
+  const [reportUnread, setReportUnread] = useState(0);
   const [currentUserId, setCurrentUserId] = useState("");
-  const [reportMsgPopup, setReportMsgPopup] = useState<{ subject: string; message: string } | null>(null);
+  const [reportMsgPopup, setReportMsgPopup] = useState<{ subject: string; senderName: string; message: string } | null>(null);
 
   // Reset unread เมื่ออยู่ในหน้า orders หรือ order detail
   useEffect(() => {
     if (pathname.startsWith("/orders")) {
       setTotalUnread(0);
+    }
+    if (pathname.startsWith("/report") || pathname.startsWith("/admin/reports")) {
+      setReportUnread(0);
     }
   }, [pathname]);
 
@@ -121,29 +125,71 @@ export default function Navbar({ username }: { username: string }) {
     const channel = supabase
       .channel(`admin-report-msg-notify-${currentUserId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "report_messages" }, async (payload) => {
-        if (payload.new.sender_id === currentUserId) return; // ignore own messages
+        if (payload.new.sender_id === currentUserId) return;
         const supabase2 = createClient();
-        const { data: rep } = await supabase2.from("reports").select("subject").eq("id", payload.new.report_id).single();
-        setReportMsgPopup({ subject: rep?.subject || "รายงาน", message: payload.new.message });
+        const [{ data: rep }, { data: sender }] = await Promise.all([
+          supabase2.from("reports").select("subject").eq("id", payload.new.report_id).single(),
+          supabase2.from("profiles").select("username").eq("id", payload.new.sender_id).single(),
+        ]);
+        const readKey = `report-read-${payload.new.report_id}`;
+        const lastRead = localStorage.getItem(readKey);
+        const msgTime = new Date(payload.new.created_at).getTime();
+        if (!lastRead || msgTime > parseInt(lastRead)) {
+          setReportUnread((n) => n + 1);
+        }
+        setReportMsgPopup({
+          subject: rep?.subject || "รายงาน",
+          senderName: sender?.username || "ผู้ใช้",
+          message: payload.new.message || "📷 รูปภาพ",
+        });
         setTimeout(() => setReportMsgPopup(null), 6000);
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [isAdmin, currentUserId]);
 
+  // User: subscribe to new report messages from admin
+  useEffect(() => {
+    if (!currentUserId || isAdmin) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`user-report-msg-notify-${currentUserId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "report_messages" }, async (payload) => {
+        if (payload.new.sender_id === currentUserId) return;
+        // เช็คว่า report นี้เป็นของ user คนนี้
+        const supabase2 = createClient();
+        const { data: rep } = await supabase2.from("reports").select("subject, reporter_id").eq("id", payload.new.report_id).single();
+        if (!rep || rep.reporter_id !== currentUserId) return;
+        const readKey = `report-read-${payload.new.report_id}`;
+        const lastRead = localStorage.getItem(readKey);
+        const msgTime = new Date(payload.new.created_at).getTime();
+        if (!lastRead || msgTime > parseInt(lastRead)) {
+          setReportUnread((n) => n + 1);
+        }
+        setReportMsgPopup({
+          subject: rep?.subject || "รายงาน",
+          senderName: "แอดมิน",
+          message: payload.new.message || "📷 รูปภาพ",
+        });
+        setTimeout(() => setReportMsgPopup(null), 6000);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUserId, isAdmin]);
+
   const navItems = isAdmin ? [
     { href: "/admin",         label: "หน้าหลัก",  icon: LayoutDashboard, emoji: "🏠",  unread: 0 },
     { href: "/admin/users",   label: "ผู้ใช้งาน", icon: User,             emoji: "👤",  unread: 0 },
     { href: "/admin/areas",   label: "พื้นที่",   icon: MapPin,           emoji: "🏫",  unread: 0 },
     { href: "/admin/wallet",  label: "ถุงเงิน",   icon: Wallet,           emoji: "💰",  unread: 0 },
-    { href: "/admin/reports", label: "รายงาน",    icon: AlertTriangle,    emoji: "📋",  unread: 0 },
+    { href: "/admin/reports", label: "รายงาน",    icon: AlertTriangle,    emoji: "📋",  unread: reportUnread },
     { href: "/orders",        label: "แชท",       icon: MessageCircle,    emoji: "💬",  unread: totalUnread },
   ] : [
     { href: "/dashboard", label: t(lang, "nav_home"),   icon: LayoutDashboard, emoji: "🏠",  unread: 0 },
     { href: "/trips",     label: t(lang, "nav_trips"),  icon: MapPin,           emoji: "🛵",  unread: 0 },
     { href: "/orders",    label: t(lang, "nav_orders"), icon: ClipboardList,    emoji: "📋",  unread: totalUnread },
     { href: "/wallet",    label: t(lang, "nav_wallet"), icon: Wallet,           emoji: "💰",  unread: 0 },
-    { href: "/report",    label: t(lang, "nav_report"), icon: AlertTriangle,    emoji: "🚨",  unread: 0 },
+    { href: "/report",    label: t(lang, "nav_report"), icon: AlertTriangle,    emoji: "🚨",  unread: reportUnread },
   ];
 
   useEffect(() => {
@@ -168,7 +214,7 @@ export default function Navbar({ username }: { username: string }) {
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] w-[90vw] max-w-sm bg-brand-navy text-white rounded-3xl shadow-blue-md px-4 py-3 flex items-start gap-3 animate-pop">
           <Bell className="w-5 h-5 flex-shrink-0 mt-0.5 text-brand-yellow" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-black text-brand-yellow">💬 ผู้ใช้ตอบกลับรายงาน</p>
+            <p className="text-xs font-black text-brand-yellow">💬 {reportMsgPopup.senderName} ส่งข้อความในรายงาน</p>
             <p className="text-xs font-bold opacity-80 truncate">{reportMsgPopup.subject}</p>
             <p className="text-sm mt-0.5 line-clamp-2">{reportMsgPopup.message}</p>
           </div>
@@ -193,7 +239,10 @@ export default function Navbar({ username }: { username: string }) {
             {navItems.slice(0, 6).map(({ href, label, icon: Icon, unread }) => {
               const active = pathname === href || pathname.startsWith(href + "/");
               return (
-                <Link key={href} href={href} onClick={() => { if (href === "/orders") setTotalUnread(0); }}
+                <Link key={href} href={href} onClick={() => {
+                    if (href === "/orders") setTotalUnread(0);
+                    if (href === "/report" || href === "/admin/reports") setReportUnread(0);
+                  }}
                   className={clsx(
                   "relative flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-bold transition-all duration-200",
                   active ? "text-white shadow-blue-sm" : "text-gray-500 hover:text-brand-navy hover:bg-brand-blue/5"
@@ -272,7 +321,10 @@ export default function Navbar({ username }: { username: string }) {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link key={href} href={href}
-                onClick={() => { if (href === "/orders") setTotalUnread(0); }}
+                onClick={() => {
+                  if (href === "/orders") setTotalUnread(0);
+                  if (href === "/report" || href === "/admin/reports") setReportUnread(0);
+                }}
                 className="flex-1 flex flex-col items-center gap-0.5 py-2 rounded-2xl transition-all duration-200">
                 <div className={clsx("relative w-10 h-7 flex items-center justify-center rounded-2xl transition-all duration-200", active ? "scale-110" : "")}
                   style={active ? {background:"linear-gradient(135deg,#5478FF,#53CBF3)"} : {}}>
