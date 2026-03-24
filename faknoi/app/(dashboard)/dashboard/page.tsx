@@ -24,7 +24,7 @@ export default async function DashboardPage() {
       .eq("status", "open")
       .gt("cutoff_time", new Date().toISOString())
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(20),
     supabase
       .from("orders")
       .select("id, status, created_at, trips(origin_zone, destination_zone)")
@@ -46,7 +46,7 @@ export default async function DashboardPage() {
     adminSupabase.from("banners").select("*").order("created_at", { ascending: true }),
   ]);
 
-  const trips = (allTrips || []).filter((t: any) => t.current_orders < t.max_orders).slice(0, 3);
+  const trips = (allTrips || []).slice(0, 10);
   const shopperTripIds = (shopperTrips || []).map((t: any) => t.id);
 
   const { data: shopperActiveOrders } = shopperTripIds.length > 0
