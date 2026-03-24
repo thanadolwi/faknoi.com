@@ -57,12 +57,8 @@ function AdminOrderChat({ order, currentUserId }: { order: Order; currentUserId:
   }, [order.id, currentUserId]);
 
   async function loadMessages() {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("messages")
-      .select("*, profiles(username)")
-      .eq("order_id", order.id)
-      .order("created_at", { ascending: true });
+    const res = await fetch(`/api/admin/messages?order_id=${order.id}`);
+    const { data } = await res.json();
     setMessages(data || []);
     setUnread(0);
     localStorage.setItem(`chat-read-${order.id}`, Date.now().toString());
@@ -103,12 +99,13 @@ function AdminOrderChat({ order, currentUserId }: { order: Order; currentUserId:
       const { data: urlData } = supabase.storage.from("chat-images").getPublicUrl(path);
       imageUrl = urlData?.publicUrl || null;
     }
-    await supabase.from("messages").insert({
-      order_id: order.id,
-      sender_id: currentUserId,
-      content: input.trim() || null,
-      image_url: imageUrl,
+    // ใช้ API route เพราะ admin ไม่ใช่ buyer/shopper ของ order (RLS บล็อก direct insert)
+    const res = await fetch("/api/admin/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order_id: order.id, content: input.trim() || null, image_url: imageUrl }),
     });
+    if (!res.ok) { setImageError("ส่งข้อความไม่สำเร็จ"); setSending(false); setUploading(false); return; }
     setInput(""); clearImage(); setSending(false); setUploading(false);
   }
 

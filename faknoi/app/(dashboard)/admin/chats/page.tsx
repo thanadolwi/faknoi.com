@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import AdminChats from "@/components/admin/AdminChats";
 
@@ -17,18 +17,20 @@ export default async function AdminChatsPage() {
 
   if (profile?.role !== "admin" && profile?.username !== "admin") redirect("/dashboard");
 
-  // ดึง orders ทั้งหมดพร้อม buyer/shopper username
-  const { data: orders } = await supabase
+  const admin = createAdminClient();
+
+  // ดึง orders ทั้งหมดพร้อม buyer/shopper username (bypass RLS)
+  const { data: orders } = await admin
     .from("orders")
     .select("id, status, item_name, created_at, buyer_id, profiles(username), trips(shopper_id, profiles(username))")
     .order("created_at", { ascending: false })
     .limit(200);
 
   // นับ unread ต่อ order (messages ที่ไม่ใช่ของ admin)
-  const { data: msgCounts } = await supabase
+  const { data: msgCounts } = await admin
     .from("messages")
-    .select("order_id")
-    .not("sender_id", "eq", user.id);
+    .select("order_id, sender_id")
+    .neq("sender_id", user.id);
 
   const unreadMap: Record<string, number> = {};
   for (const m of msgCounts || []) {
