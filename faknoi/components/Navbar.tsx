@@ -24,7 +24,7 @@ export default function Navbar({ username }: { username: string }) {
 
   // Reset unread เมื่ออยู่ในหน้า orders หรือ order detail
   useEffect(() => {
-    if (pathname.startsWith("/orders")) {
+    if (pathname.startsWith("/orders") || pathname.startsWith("/admin/chats")) {
       setTotalUnread(0);
     }
     if (pathname.startsWith("/report") || pathname.startsWith("/admin/reports")) {
@@ -183,7 +183,7 @@ export default function Navbar({ username }: { username: string }) {
     { href: "/admin/areas",   label: "พื้นที่",   icon: MapPin,           emoji: "🏫",  unread: 0 },
     { href: "/admin/wallet",  label: "ถุงเงิน",   icon: Wallet,           emoji: "💰",  unread: 0 },
     { href: "/admin/reports", label: "รายงาน",    icon: AlertTriangle,    emoji: "📋",  unread: reportUnread },
-    { href: "/orders",        label: "แชท",       icon: MessageCircle,    emoji: "💬",  unread: totalUnread },
+    { href: "/admin/chats",   label: "แชท",       icon: MessageCircle,    emoji: "💬",  unread: totalUnread },
   ] : [
     { href: "/dashboard", label: t(lang, "nav_home"),   icon: LayoutDashboard, emoji: "🏠",  unread: 0 },
     { href: "/trips",     label: t(lang, "nav_trips"),  icon: MapPin,           emoji: "🛵",  unread: 0 },
@@ -240,7 +240,7 @@ export default function Navbar({ username }: { username: string }) {
               const active = pathname === href || pathname.startsWith(href + "/");
               return (
                 <Link key={href} href={href} onClick={() => {
-                    if (href === "/orders") setTotalUnread(0);
+                    if (href === "/orders" || href === "/admin/chats") setTotalUnread(0);
                     if (href === "/report" || href === "/admin/reports") setReportUnread(0);
                   }}
                   className={clsx(
@@ -322,7 +322,7 @@ export default function Navbar({ username }: { username: string }) {
             return (
               <Link key={href} href={href}
                 onClick={() => {
-                  if (href === "/orders") setTotalUnread(0);
+                  if (href === "/orders" || href === "/admin/chats") setTotalUnread(0);
                   if (href === "/report" || href === "/admin/reports") setReportUnread(0);
                 }}
                 className="flex-1 flex flex-col items-center gap-0.5 py-2 rounded-2xl transition-all duration-200">
